@@ -1,13 +1,16 @@
-import os
+﻿import os
 import json
+import collections
 
-class Item(object):
-    def __init__(self, name, dir, filename):
+class Media(object):
+    def __init__(self, name, dir, file_path):
         self.name = name 
         self.dir = dir
-        self.filename = [filename]
+        size = os.path.getsize(filename)
+        self.file_path = OrderedDict({file_path : size})
+        self.date = os.path.getmtime(file_path)
 
-class ObjectList(object):
+class MediaList(object):
     """description of class"""
     def __init__(self, dirlist, type):
         self.dirlist = dirlist
@@ -18,24 +21,28 @@ class ObjectList(object):
         else:
             raise "Invalid type"
 
-        self.items = {}
+        self.media_list = {}
 
     def scan(self):   
-        self.items = [] 
+        self.media_list = [] 
         for subdir, dirs, files in os.walk(unicode(self.dirlist)):
             for file in files:
                 filename, ext = os.path.splitext(file)
                 if ext not in self.ext:
                     continue
 
+                file_path = os.path.join(subdir, file)
                 if subdir == self.dirlist:
-                    item = Item(filename, subdir, os.path.join(subdir, file))
+                    media = Media(filename, subdir, file_path)
                 else:
                     path_list = subdir.split(os.sep)
-                    item = Item(path_list[-1], subdir, os.path.join(subdir, file))
+                    media = Media(path_list[-1], subdir, file_path)
                     
-                        
-                self.items.append(item)
+                
+                if media.name in self.media_list: 
+                    self.media_list[media.name].file_path[file_path] = media.file_path[file_path]
+                else:       
+                    self.media_list[media.name] = media
        
         s = json.dumps([ob.__dict__ for ob in self.items], 
                        ensure_ascii=False, 
@@ -44,6 +51,6 @@ class ObjectList(object):
                        separators=(',', ': ')) 
         print s
 
-ol = ObjectList("z:\\torrent\\__downloaded\\", "video")
+ol = MediaList("z:\\torrent\\__downloaded\\", "video")
 ol.scan()
 print "done"
