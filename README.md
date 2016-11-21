@@ -29,6 +29,7 @@ Device Control :
 vlc control
 http://stackoverflow.com/questions/24178980/how-to-monitor-vlc-media-player-on-windows-7-using-python
 https://wiki.videolan.org/VLC_command-line_help/
+https://wiki.videolan.org/VLC_HTTP_requests/
 
 * Yamaha RX-V control
 https://github.com/wuub/rxv
