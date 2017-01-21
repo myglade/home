@@ -24,16 +24,20 @@ class Media(object):
             self.ext = ['.mp4', '.avi', '.mkv', '.wmv', '.asf', '.mpg', 'm4v', 'mov']
         elif type == "audio":
             self.ext = ['.mp3']
+        elif type == "image":
+            self.ext = ['.jpg', '.gif', '.png']
         else:
             raise "Invalid type"
         
         self.type = type
         self.media_list = {}
-    
+        self.cron_callback = None
+
     def get_media_list(self):
         return self.media_list_str
 
-    def start_cron(self, interval=300):
+    def start_cron(self, callback=None, interval=300):
+        self.cron_callback = callback
         self.stopped = Event()
         def loop():
             while not self.stopped.wait(interval): # the first call is in `interval` secs
@@ -72,12 +76,15 @@ class Media(object):
                        separators=(',', ': ')) 
         self.media_list_str.replace("\\\\", "\\")
         log.info("finish scan")
+        if self.cron_callback:
+            self.cron_callback(self.media_list)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    ol = Media("z:\\torrent\\__downloaded\\", "video")
+#    ol = Media("y:\\torrent\\__downloaded\\", "video")
+    ol = Media("y:\\\Pictures\\2015-2\\", "image")
     ol.start_cron(5)
     time.sleep(20)
     ol.stop_cron()
