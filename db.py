@@ -2,7 +2,7 @@ import sqlite3
 
 class Db(object):
     """ database """
-    def __init__(self):
+    def __init__(self, name):
         pass
 
     def _create_table(name, columns):

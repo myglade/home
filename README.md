@@ -1,5 +1,18 @@
 # home
 
+Prerequisite
+
+pip install piexif
+https://pypi.python.org/pypi/piexif
+
+pip install geopy
+https://pypi.python.org/pypi/geopy/
+Documentation : http://geopy.readthedocs.io/en/latest/
+
+Google Map api key (dian) : AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A
+
+
+
 Client Functions
 1. display all video / audio files as list
 2. Control play / stop / next / prev etc
