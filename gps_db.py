@@ -3,6 +3,7 @@ from geopy.geocoders import Nominatim
 from geopy.geocoders import GoogleV3
 
 from db import Db
+from _sqlite3 import Row
 
 log = logging.getLogger(__name__)
 
@@ -13,12 +14,30 @@ class GpsDb(Db):
     def __init__(self):
         pass
     
+    def create_table(self):
+        sql = '''CREATE TABLE gps(
+    id         INTEGER PRIMARY KEY,
+    loc        VARCHAR[25],
+    address    TEXT
+);
+'''
+        self.execute(sql)
+    
     def lookup(self, loc):
-        return None
+        self.execute("SELECT * FROM %s WHERE loc=?", self.table, (loc))
+        row = self.cursor.fetchone()
+        if not row:
+            log.debug("key=%s not found", loc)
+            return None
+
+        log.debug("found.  %s", row)        
+        return row[2]
     
     def save(self, loc, address):
-        pass
-    
+        self.cursor.execute("INSERT INTO %s(loc, address) VALUES(?,?)", loc, address)
+       
+        self.commit()
+        
     def get_location(self, loc):
         """
         loc (tuple) : geolocation.  latitude, longitude
