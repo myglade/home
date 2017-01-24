@@ -29,5 +29,9 @@ class Db(object):
             values += ",?"
             param += (val)
 
-        sql = "INSERT INTO %s (%s) VALUES(%s)"
-        self.conn.execute(sql)
+
+    def exectue(self, *args):
+        self.cursor.execute(*args)
+        
+    def commit(self):
+        self.conn.commit()
