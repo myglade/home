@@ -19,7 +19,11 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="1.jpg" />
+    <Content Include="media\1.jpg" />
+    <Content Include="media\2.jpg" />
+    <Content Include="media\3.jpg" />
+    <Content Include="media\4.jpg" />
+    <Content Include="media\5.jpg" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="db.py" />
@@ -31,6 +35,9 @@
     <Compile Include="media_manager.py" />
     <Compile Include="program.py" />
     <Compile Include="vlc_control.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="media\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

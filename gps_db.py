@@ -17,17 +17,17 @@ class GpsDb(Db):
 
     def __init__(self):
         super(GpsDb, self).__init__("test.db")
-        self.create_table()
 
-    def create_table(self):
         self.execute('''CREATE TABLE IF NOT EXISTS %s(
-                            id         INTEGER PRIMARY KEY,
-                            loc        TEXT,
-                            address    TEXT
+                            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                            loc     TEXT,
+                            address TEXT
                         );
                         ''' % self.table)
+
+        self.execute("CREATE INDEX loc_index on %s(loc)" % self.table)
     
-    def lookup(self, loc):
+    def get(self, loc):
         self.execute("SELECT * FROM %s WHERE loc=?" % self.table, (loc,))
         row = self.cursor.fetchone()
         if not row:
@@ -53,7 +53,7 @@ class GpsDb(Db):
         key = str(loc).strip('()')
         log.debug("geo key : %s", key)
         
-        address = self.lookup(key)
+        address = self.get(key)
         if address:
             log.debug("location is found at db. %s", address)
             return address
