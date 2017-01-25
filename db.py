@@ -8,29 +8,10 @@ class Db(object):
     def __init__(self, db_file):
         self.db_file = db_file
         self.conn = sqlite3.connect(db_file)
+        self.cursor = self.conn.cursor()
         # except lite.Error, e:
 
-    def execute(self, sql):
-        log.debug("execute: %s", sql)
-        return self.conn.execute(sql)
-
-    def insert(self, table, data):
-        """
-        table (str) : table name
-        data (dict) : values
-        """
-
-        sql = ""
-        key = ""
-        values = ""
-        param = ()
-        for col, val in data.iteritems():
-            key += "," + col
-            values += ",?"
-            param += (val)
-
-
-    def exectue(self, *args):
+    def execute(self, *args):
         self.cursor.execute(*args)
         
     def commit(self):

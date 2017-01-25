@@ -1,6 +1,7 @@
 import logging
 from geopy.geocoders import Nominatim
 from geopy.geocoders import GoogleV3
+import decimal
 
 from db import Db
 from _sqlite3 import Row
@@ -10,21 +11,24 @@ log = logging.getLogger(__name__)
 # erin
 GOOGLE_API_1 = 'AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A'
 
+
 class GpsDb(Db):
+    table = 'gps'
+
     def __init__(self):
-        pass
-    
+        super(GpsDb, self).__init__("test.db")
+        self.create_table()
+
     def create_table(self):
-        sql = '''CREATE TABLE gps(
-    id         INTEGER PRIMARY KEY,
-    loc        VARCHAR[25],
-    address    TEXT
-);
-'''
-        self.execute(sql)
+        self.execute('''CREATE TABLE IF NOT EXISTS %s(
+                            id         INTEGER PRIMARY KEY,
+                            loc        TEXT,
+                            address    TEXT
+                        );
+                        ''' % self.table)
     
     def lookup(self, loc):
-        self.execute("SELECT * FROM %s WHERE loc=?", self.table, (loc))
+        self.execute("SELECT * FROM %s WHERE loc=?" % self.table, (loc,))
         row = self.cursor.fetchone()
         if not row:
             log.debug("key=%s not found", loc)
@@ -34,7 +38,8 @@ class GpsDb(Db):
         return row[2]
     
     def save(self, loc, address):
-        self.cursor.execute("INSERT INTO %s(loc, address) VALUES(?,?)", loc, address)
+        self.cursor.execute("INSERT INTO %s(loc, address) VALUES(?,?)" % self.table, 
+                            loc, address)
        
         self.commit()
         
@@ -44,6 +49,7 @@ class GpsDb(Db):
         address (string): result address
         
         """
+        a = decimal.Decimal('%.6f' % loc[0])
         key = str(loc).strip('()')
         log.debug("geo key : %s", key)
         

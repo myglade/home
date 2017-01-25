@@ -23,6 +23,12 @@ def get_img_info(name):
     date = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal]
     
     gps = exif_dict['GPS']
+    log.debug("piexif loc= %s %s, %s, %s", 
+              gps[piexif.GPSIFD.GPSLatitude], 
+              gps[piexif.GPSIFD.GPSLatitudeRef],
+              gps[piexif.GPSIFD.GPSLongitude], 
+              gps[piexif.GPSIFD.GPSLongitudeRef]);
+
     latitude = get_gps(gps[piexif.GPSIFD.GPSLatitude], gps[piexif.GPSIFD.GPSLatitudeRef])
     longitude = get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
 
@@ -44,10 +50,12 @@ def get_gps(coord, ref):
     
     flip = -1 if ref == 'W' or ref == 'S' else 1
     
-    return flip * (degrees + minutes / 60.0 + seconds / 3600.0)
+    return float(flip) * (degrees + minutes / 60.0 + seconds / 3600.0)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    get_img_info("/scratch/heuikim/Downloads/1.JPG")
+    get_img_info("1.JPG")
+ #   get_img_info("/scratch/heuikim/Downloads/1.JPG")
