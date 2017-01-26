@@ -17,6 +17,8 @@ from gps_db import GpsDb
 
 log = logging.getLogger(__name__)
 
+gps = GpsDb("gps.sqlite")
+
 def get_img_info(name):
     exif_dict = piexif.load(name)
     
@@ -33,8 +35,6 @@ def get_img_info(name):
     longitude = get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
 
     loc = (latitude, longitude)
-    gps = GpsDb()
-    
     address = gps.get_location(loc)
     
     return (date, address)
@@ -57,5 +57,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    get_img_info("1.JPG")
+    get_img_info("media/1.jpg")
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")

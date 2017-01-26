@@ -33,8 +33,18 @@ class Media(object):
         self.media_list = {}
         self.cron_callback = None
 
+    def get_media_list_as_json(self):
+        json_str = json.dumps([ob.__dict__ for ob in self.media_list.itervalues()], 
+                       ensure_ascii=False, 
+                       encoding='utf8', 
+                       indent=4, 
+                       separators=(',', ': ')) 
+        json_str.replace("\\\\", "\\")
+
+        return json_str
+
     def get_media_list(self):
-        return self.media_list_str
+        return self.media_list
 
     def start_cron(self, callback=None, interval=300):
         self.cron_callback = callback
@@ -50,6 +60,7 @@ class Media(object):
 
     def scan(self):   
         log.info("start scan")
+
         self.media_list = {} 
         for subdir, dirs, files in os.walk(unicode(self.dirlist)):
             for file in files:
@@ -69,15 +80,11 @@ class Media(object):
                 else:       
                     self.media_list[media.name] = media
 
-        self.media_list_str = json.dumps([ob.__dict__ for ob in self.media_list.itervalues()], 
-                       ensure_ascii=False, 
-                       encoding='utf8', 
-                       indent=4, 
-                       separators=(',', ': ')) 
-        self.media_list_str.replace("\\\\", "\\")
         log.info("finish scan")
         if self.cron_callback:
             self.cron_callback(self.media_list)
+
+        return self.media_list
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,

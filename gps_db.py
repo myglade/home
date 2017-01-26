@@ -15,8 +15,8 @@ GOOGLE_API_1 = 'AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A'
 class GpsDb(Db):
     table = 'gps'
 
-    def __init__(self):
-        super(GpsDb, self).__init__("test.db")
+    def __init__(self, db_file):
+        super(GpsDb, self).__init__(db_file)
 
         self.execute('''CREATE TABLE IF NOT EXISTS %s(
                             id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +25,7 @@ class GpsDb(Db):
                         );
                         ''' % self.table)
 
-        self.execute("CREATE INDEX loc_index on %s(loc)" % self.table)
+        self.execute("CREATE INDEX IF NOT EXISTS loc_index on %s(loc)" % self.table)
     
     def get(self, loc):
         self.execute("SELECT * FROM %s WHERE loc=?" % self.table, (loc,))
@@ -35,13 +35,13 @@ class GpsDb(Db):
             return None
 
         log.debug("found.  %s", row)        
-        return row[2]
+        return row["address"]
     
-    def save(self, loc, address):
-        self.cursor.execute("INSERT INTO %s(loc, address) VALUES(?,?)" % self.table, 
-                            loc, address)
-       
+    def put(self, loc, address):
+        self.execute("INSERT INTO %s(loc, address) VALUES(?,?)" % self.table, 
+                            (loc, address))
         self.commit()
+        log.debug("save %s, %s", loc, address)
         
     def get_location(self, loc):
         """
@@ -49,8 +49,9 @@ class GpsDb(Db):
         address (string): result address
         
         """
-        a = decimal.Decimal('%.6f' % loc[0])
-        key = str(loc).strip('()')
+        latitude = decimal.Decimal('%.6f' % loc[0])
+        longitude = decimal.Decimal('%.6f' % loc[1])
+        key = str(latitude) + "," + str(longitude)
         log.debug("geo key : %s", key)
         
         address = self.get(key)
@@ -65,7 +66,7 @@ class GpsDb(Db):
             location = geolocator.reverse(key)
             if location: 
                 address = location[0].address
-                self.save(key, address)
+                self.put(key, address)
                 log.debug("get address. %s : %s", key, address)
                 return address
         except Exception as e:

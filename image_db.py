@@ -1,4 +1,9 @@
+import logging
+
 import db
+from media import Media
+
+log = logging.getLogger(__name__)
 
 class ImageDb(db.Db):
     """
@@ -20,12 +25,13 @@ class ImageDb(db.Db):
                             loc       TEXT)
                     ''' % self.table)
         
-        self.execute("CREATE INDEX created_index on %s(created)" % self.table)
+        self.execute("CREATE INDEX IF NOT EXISTS created_index on %s(created)" % self.table)
         
     def put(self, name, path, created, loc):
-        set.execute("INSERT INTO %s(name,path,created,loc) VALUES(?,?,?,?)" % self.table,
+        self.execute("INSERT INTO %s(name,path,created,loc) VALUES(?,?,?,?)" % self.table,
                     (name, path, created, loc))
-        
+        self.commit()
+
     def get_next_by_time(self, id):
         """ by time """
         
@@ -36,7 +42,7 @@ class ImageDb(db.Db):
             row = self.cursor.fetchone()
             return row
         
-        created = row[3]
+        created = row["created"]
         self.execute('''SELECT * FROM %s WHERE id < ? AND created <= ? 
                         ORDER BY created, id LIMIT 1''' % self.table, 
                         (id, created))
@@ -50,4 +56,9 @@ class ImageDb(db.Db):
         
         return row
     
-    
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
+
+    m = Media("media", "image")
+    m.scan()
