@@ -10,6 +10,7 @@ Package : https://pypi.python.org/pypi/piexif
 
  
 """
+import decimal
 import logging
 import piexif
 
@@ -34,10 +35,10 @@ def get_img_info(name):
     latitude = get_gps(gps[piexif.GPSIFD.GPSLatitude], gps[piexif.GPSIFD.GPSLatitudeRef])
     longitude = get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
 
-    loc = (latitude, longitude)
-    address = gps.get_location(loc)
-    
-    return (date, address)
+    loc = str(latitude) + "," + str(longitude)
+   
+    return (date, loc)
+
 
 def gps_to_num(part):
     return float(part[0]) / float(part[1])
@@ -50,7 +51,9 @@ def get_gps(coord, ref):
     
     flip = -1 if ref == 'W' or ref == 'S' else 1
     
-    return float(flip) * (degrees + minutes / 60.0 + seconds / 3600.0)
+    v = float(flip) * (degrees + minutes / 60.0 + seconds / 3600.0)
+
+    return decimal.Decimal('%.6f' % v)
 
 
 if __name__ == "__main__":

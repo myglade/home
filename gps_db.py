@@ -1,7 +1,6 @@
 import logging
 from geopy.geocoders import Nominatim
 from geopy.geocoders import GoogleV3
-import decimal
 
 from db import Db
 from _sqlite3 import Row
@@ -49,12 +48,8 @@ class GpsDb(Db):
         address (string): result address
         
         """
-        latitude = decimal.Decimal('%.6f' % loc[0])
-        longitude = decimal.Decimal('%.6f' % loc[1])
-        key = str(latitude) + "," + str(longitude)
-        log.debug("geo key : %s", key)
-        
-        address = self.get(key)
+        log.debug("geo loc : %s", loc)
+        address = self.get(loc)
         if address:
             log.debug("location is found at db. %s", address)
             return address

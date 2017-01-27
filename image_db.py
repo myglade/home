@@ -60,5 +60,15 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
+    import image_info
+
+    imagedb = ImageDb("image.sqlite")
     m = Media("media", "image")
-    m.scan()
+    media_list = m.scan()
+    for key, value in media_list.iteritems():
+        for name in value.file_path.keys():
+            path = name
+            break
+
+        date, loc = image_info.get_img_info(path)
+        imagedb.put()
