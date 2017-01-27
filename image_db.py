@@ -1,7 +1,9 @@
 import logging
+import sqlite3
 
 import db
 from media import Media
+from _sqlite3 import Row
 
 log = logging.getLogger(__name__)
 
@@ -14,13 +16,13 @@ class ImageDb(db.Db):
     """
     table = "image"
     
-    def __init__(self, db_file):
-        super(ImageDb, self).__init__(db_file)
+    def __init__(self, db_file, conn=None):
+        super(ImageDb, self).__init__(db_file, conn)
 
         self.execute('''CREATE TABLE IF NOT EXISTS %s(
                             id        INTEGER PRIMARY KEY AUTOINCREMENT,
                             name      TEXT,
-                            path      TEXT,
+                            path      TEXT UNIQUE,
                             created   DATETIME,
                             loc       TEXT)
                     ''' % self.table)
@@ -28,9 +30,15 @@ class ImageDb(db.Db):
         self.execute("CREATE INDEX IF NOT EXISTS created_index on %s(created)" % self.table)
         
     def put(self, name, path, created, loc):
-        self.execute("INSERT INTO %s(name,path,created,loc) VALUES(?,?,?,?)" % self.table,
-                    (name, path, created, loc))
-        self.commit()
+        try:
+            self.execute("INSERT INTO %s(name,path,created,loc) VALUES(?,?,?,?)" % self.table,
+                        (name, path, created, loc))
+            
+            log.debug("Insert name=%s, path=%s, created=%s, loc=%s", name, path, created, loc)
+            self.commit()
+        except sqlite3.IntegrityError:
+            log.info("image already exists. name=%s, path=%s, created=%s, loc=%s", 
+                     name, path, created, loc)
 
     def get_next_by_time(self, id):
         """ by time """
@@ -38,20 +46,30 @@ class ImageDb(db.Db):
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))
         row = self.cursor.fetchone()
         if not row:
-            self.execute("SELECT * FROM %s ORDER BY created, id LIMIT 1")
+            self.execute("SELECT * FROM %s ORDER BY created, id LIMIT 1" % self.table)
             row = self.cursor.fetchone()
             return row
         
         created = row["created"]
-        self.execute('''SELECT * FROM %s WHERE id < ? AND created <= ? 
+        # if there are image with the same times, get next
+        self.execute('''SELECT * FROM %s WHERE id > ? AND created=? 
+                ORDER BY id LIMIT 1''' % self.table, 
+                (id, created))
+        row = self.cursor.fetchone()
+        if row:
+            return row  
+
+        # get next earliest image
+        self.execute('''SELECT * FROM %s WHERE created > ? 
                         ORDER BY created, id LIMIT 1''' % self.table, 
-                        (id, created))
+                        (created, ))
         
         row = self.cursor.fetchone()
-        # reach to the end. go back to first
-        if not row:
-            self.execute("SELECT * FROM %s ORDER BY created, id LIMIT 1")
+        if row:
+            return row  
         
+        # reach to the end. go back to first
+        self.execute("SELECT * FROM %s ORDER BY created, id LIMIT 1" % self.table)
         row = self.cursor.fetchone()
         
         return row
@@ -65,10 +83,16 @@ if __name__ == "__main__":
     imagedb = ImageDb("image.sqlite")
     m = Media("media", "image")
     media_list = m.scan()
-    for key, value in media_list.iteritems():
+    for value in media_list.values():
         for name in value.file_path.keys():
             path = name
             break
 
         date, loc = image_info.get_img_info(path)
-        imagedb.put()
+        imagedb.put(value.fullname(), path, date, loc)
+
+    id = -1
+    for i in xrange(20):
+        r = imagedb.get_next_by_time(id)
+        print r
+        id = r["id"]

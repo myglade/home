@@ -14,8 +14,8 @@ GOOGLE_API_1 = 'AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A'
 class GpsDb(Db):
     table = 'gps'
 
-    def __init__(self, db_file):
-        super(GpsDb, self).__init__(db_file)
+    def __init__(self, db_file, conn=None):
+        super(GpsDb, self).__init__(db_file, conn)
 
         self.execute('''CREATE TABLE IF NOT EXISTS %s(
                             id      INTEGER PRIMARY KEY AUTOINCREMENT,

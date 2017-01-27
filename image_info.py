@@ -21,21 +21,26 @@ log = logging.getLogger(__name__)
 gps = GpsDb("gps.sqlite")
 
 def get_img_info(name):
+    date = None
+    loc = None
+    
     exif_dict = piexif.load(name)
     
-    date = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal]
+    if piexif.ExifIFD.DateTimeOriginal in exif_dict['Exif']:
+        date = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal]
     
     gps = exif_dict['GPS']
-    log.debug("piexif loc= %s %s, %s, %s", 
-              gps[piexif.GPSIFD.GPSLatitude], 
-              gps[piexif.GPSIFD.GPSLatitudeRef],
-              gps[piexif.GPSIFD.GPSLongitude], 
-              gps[piexif.GPSIFD.GPSLongitudeRef]);
-
-    latitude = get_gps(gps[piexif.GPSIFD.GPSLatitude], gps[piexif.GPSIFD.GPSLatitudeRef])
-    longitude = get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
-
-    loc = str(latitude) + "," + str(longitude)
+    if gps:
+        log.debug("piexif loc= %s %s, %s, %s", 
+                  gps[piexif.GPSIFD.GPSLatitude], 
+                  gps[piexif.GPSIFD.GPSLatitudeRef],
+                  gps[piexif.GPSIFD.GPSLongitude], 
+                  gps[piexif.GPSIFD.GPSLongitudeRef]);
+    
+        latitude = get_gps(gps[piexif.GPSIFD.GPSLatitude], gps[piexif.GPSIFD.GPSLatitudeRef])
+        longitude = get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
+    
+        loc = str(latitude) + "," + str(longitude)
    
     return (date, loc)
 

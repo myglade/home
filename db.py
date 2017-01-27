@@ -12,9 +12,13 @@ def dict_factory(cursor, row):
 
 class Db(object):
     """ database """
-    def __init__(self, db_file):
-        self.db_file = db_file
-        self.conn = sqlite3.connect(db_file)
+    def __init__(self, db_file, conn=None):
+        if conn:
+            self.conn = conn
+        else:
+            self.db_file = db_file
+            self.conn = sqlite3.connect(db_file)
+            
         self.conn.row_factory = dict_factory
         # or conn.row_factory = sqlite3.Row
 

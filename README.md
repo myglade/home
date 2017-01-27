@@ -12,6 +12,9 @@ Documentation : http://geopy.readthedocs.io/en/latest/
 Google Map api key (dian) : AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A
 
 
+pip install flask
+
+
 
 Client Functions
 1. display all video / audio files as list
