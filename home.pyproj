@@ -35,9 +35,13 @@
     <Compile Include="media_manager.py" />
     <Compile Include="program.py" />
     <Compile Include="vlc_control.py" />
+    <Compile Include="web\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="media\" />
+    <Folder Include="web\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>
