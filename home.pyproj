@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{56e79734-c2b1-4cac-b30b-19ff23bf601c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>image_db.py</StartupFile>
+    <StartupFile>web.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -24,6 +24,7 @@
     <Content Include="media\3.jpg" />
     <Content Include="media\4.jpg" />
     <Content Include="media\5.jpg" />
+    <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="db.py" />
@@ -35,13 +36,12 @@
     <Compile Include="media_manager.py" />
     <Compile Include="program.py" />
     <Compile Include="vlc_control.py" />
-    <Compile Include="web\__init__.py">
+    <Compile Include="web.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="media\" />
-    <Folder Include="web\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>
