@@ -96,3 +96,12 @@ if __name__ == "__main__":
         r = imagedb.get_next_by_time(id)
         print r
         id = r["id"]
+
+'''
+{'loc': u'37.350078,-121.981169', 
+'path': u'media/1.jpg', 
+'created': u'2015:10:03 01:31:01', 
+'id': 1, 
+'name': u'1.jpg'}
+
+'''
