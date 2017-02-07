@@ -54,3 +54,11 @@ https://github.com/Raynes/rxvc
 * Sharp TV control
 
 
+
+///////////////////////////////////////////
+Slideshow
+
+http://kthornbloom.github.io/Smoothslides/
+http://www.menucool.com/javascript-image-slider
+http://wowslider.com/wordpress-gallery-plugin-grafito-seven-demo.html#
+kenburns

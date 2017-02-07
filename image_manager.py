@@ -41,14 +41,16 @@ class ImageManager(object):
             self.update_imagedb(image, prop)
 
     def get_newimage(self, id):
+       if not id:
+           id = -1
        img = self.imagedb.get_next_by_time(id) 
        address = None
        try:
-           address = self.gpsdb(img["loc"])
+           address = self.gpsdb.get_location(img["loc"])
        except Exception as e:
            log.debug("In accessing api, exception.  \n%s", e)
 
-       img.address = address
+       img["address"] = address
 
        return img
 

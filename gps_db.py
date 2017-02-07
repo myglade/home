@@ -58,11 +58,11 @@ class GpsDb(Db):
         
         try:
             geolocator = GoogleV3(api_key=GOOGLE_API_1)
-            location = geolocator.reverse(key)
+            location = geolocator.reverse(loc)
             if location: 
                 address = location[0].address
-                self.put(key, address)
-                log.debug("get address. %s : %s", key, address)
+                self.put(loc, address)
+                log.debug("get address. %s : %s", loc, address)
                 return address
         except Exception as e:
             log.debug("In accessing api, exception.  \n%s", e)

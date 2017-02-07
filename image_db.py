@@ -88,7 +88,7 @@ if __name__ == "__main__":
             path = name
             break
 
-        date, loc = image_info.get_img_info(path)
+        date, loc = image_info.get(path)
         imagedb.put(value.fullname(), path, date, loc)
 
     id = -1
