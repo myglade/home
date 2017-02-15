@@ -60,5 +60,6 @@ Slideshow
 
 http://kthornbloom.github.io/Smoothslides/
 http://www.menucool.com/javascript-image-slider
-http://wowslider.com/wordpress-gallery-plugin-grafito-seven-demo.html#
-kenburns
+http://wowslider.com/wordpress-gallery-plugin-grafito-seven-demo.html#kenburns
+
+http://dynamicdrive.com/dynamicindex14/index.html
