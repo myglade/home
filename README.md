@@ -63,3 +63,4 @@ http://www.menucool.com/javascript-image-slider
 http://wowslider.com/wordpress-gallery-plugin-grafito-seven-demo.html#kenburns
 
 http://dynamicdrive.com/dynamicindex14/index.html
+https://sylouuu.github.io/desoslide/
