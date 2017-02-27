@@ -1,4 +1,4 @@
-﻿window.addEventListener('load', slideShow, false);
+﻿//window.addEventListener('load', slideShow, false);
 
 function slideShow() {
 
@@ -206,6 +206,13 @@ function slideShow() {
         } // fadeActiveSlides
     } // transitionSlides
 
+    function process() {
+        old_image = image_queue.shift();
+        new_image = image_queue[0];
+        transitionSlides(image_queue);
+        
+        load_new_image(image_queue)
+    }
 } // slideShow
 
 function preload(url, timeout) {
@@ -255,7 +262,7 @@ function download() {
 // https://www.sitepoint.com/preloading-images-in-parallel-with-promises/
 
 
-
+document.body.style.overflow = 'hidden';
 
 
 
@@ -265,23 +272,40 @@ var llama = new preload('media/1.jpg');
 console.log(llama)
 show_image();
 
+
+function resize(img) {
+    winDim = getWinDim();
+
+
+    img.style.height = winDim.y - 00 + "px";
+
+    if (img.offsetWidth > winDim.x) {
+        img.style.height = null;
+        img.style.width = winDim.x + "px";
+    }
+}
+
+function getWinDim() {
+    var body = document.documentElement || document.body;
+
+    return {
+        x: window.innerWidth || body.clientWidth,
+        y: window.innerHeight || body.clientHeight
+    }
+}
+
 function show_image() {
     if (llama.loaded) {
         var l = new Image();
         l.src = 'media/1.jpg';
-        l.style.width = "100%";
-        l.style.height = "100%";
+        resize(l);
         document.body.appendChild(l);
-        alert("success");
     } else if (llama.aborted) {
         var l = document.createElement('p');
         l.innerHTML = 'image.gif got cancelled';
         document.body.appendChild(l);
-        alert("1");
     } else {
         setTimeout(show_image, 10);
-        alert("2");
     }
-    alert("ffffss");
     return false;
 }

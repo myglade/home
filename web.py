@@ -2,19 +2,24 @@ from flask import (
     Flask, 
     request,
     jsonify,
-    send_file
+    send_file,
+    render_template
     )
 import os.path
+import random
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+app = Flask(__name__, 
+            static_folder='static', 
+            static_url_path='',
+            template_folder='static')
 
 import image_manager
 import json
 import logging
 
-@app.route("/")
+@app.route("/index.html")
 def hello():
-    return "Hello World!"
+    return render_template('index.html', rand=random.randint(1, 10000000))
 
 @app.route('/<path:path>')
 def static_file(path):
