@@ -1,5 +1,15 @@
 ﻿//window.addEventListener('load', slideShow, false);
 
+String.prototype.format = function () {
+    var s = this,
+        i = arguments.length;
+
+    while (i--) {
+        s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arguments[i]);
+    }
+    return s;
+};
+
 function slideShow() {
 
     /* GLOBALS **********************************************************************************************/
@@ -16,7 +26,11 @@ function slideShow() {
         slideImages: [], // Will contain all of the slide image objects.
         slideShowID: null, // A setInterval() ID value used to stop the slide show.
         slideShowRunning: true, // Used to record when the slide show is running and when it's not. The slide show is always initially running.    
-        slideIndex: 0 // The index of the current slide image.
+        slideIndex: 0, // The index of the current slide image.
+
+        image_queue: [],
+        cur_id: -1,
+        server: "http://"
     }
 
     /* MAIN *************************************************************************************************/
@@ -174,14 +188,8 @@ function slideShow() {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     function transitionSlides() {
-        var currentSlide = globals.slideImages[globals.slideIndex];
-
-        ++(globals.slideIndex);
-        if (globals.slideIndex >= globals.slideImages.length) {
-            globals.slideIndex = 0;
-        }
-
-        var nextSlide = globals.slideImages[globals.slideIndex];
+        cur_image = globals.image_queue.shift();
+        next_image = globals.image_queue[0];
 
         var currentSlideOpacity = 1; // Fade the current slide out.
         var nextSlideOpacity = 0; // Fade the next slide in.
@@ -195,23 +203,53 @@ function slideShow() {
             // console.log(currentSlideOpacity + nextSlideOpacity); // This should always be very close to 1.
 
             if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
-                currentSlide.style.opacity = currentSlideOpacity;
-                nextSlide.style.opacity = nextSlideOpacity;
+                cur_image.style.opacity = currentSlideOpacity;
+                next_image.style.opacity = nextSlideOpacity;
             }
             else {
-                currentSlide.style.opacity = 0;
-                nextSlide.style.opacity = 1;
+                cur_image.style.opacity = 0;
+                next_image.style.opacity = 1;
                 clearInterval(fadeActiveSlidesID);
+
+                get_next_image(globals.image_queue);
             }
         } // fadeActiveSlides
     } // transitionSlides
 
-    function process() {
-        old_image = image_queue.shift();
-        new_image = image_queue[0];
-        transitionSlides(image_queue);
-        
-        load_new_image(image_queue)
+/*
+{
+  "address": "Not Found",
+  "created": "2015:12:11 15:26:20",
+  "id": 6,
+  "loc": null,
+  "name": "6.jpg",
+  "path": "media/6.jpg"
+}
+
+
+*/
+
+    function get_next_image(queue) {
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                obj = JSON.parse(xmlhttp.responseText);
+                download_image(queue, obj);
+            }
+        }
+        query = "{0}?id={1}".format(globals.server, globals.cur_id); 
+        xmlhttp.open("GET", query, true);
+        xmlhttp.send();
+    }
+
+    function download_image(queue, obj) {
+        var image = new Image();
+
+        image.obj = obj;
+        image.onload = function () {
+            queue.push(image);
+        };
+        image.src = "http://{0}/{1}".format(window.location.hostname, obj["path"])
     }
 } // slideShow
 
