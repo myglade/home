@@ -1,4 +1,20 @@
-﻿//window.addEventListener('load', slideShow, false);
+﻿/*
+1. body onload call
+    - read cookie and get last image id
+    - start to download next image.
+        img.src = xxxx
+        onload = ...   .push image to queue
+    - if queue is filled with 3 or 5 images. go to 2.
+2. start transition
+    - from current to next.
+    - if current is null, fade in with next
+3. if find-in is complete, load next image.
+4. pop front if size is larger then threthold.
+
+*/
+
+
+window.addEventListener('load', slideShow, false);
 
 String.prototype.format = function () {
     var s = this,
@@ -18,9 +34,6 @@ function slideShow() {
         slideDelay: 4000, // The time interval between consecutive slides.
         fadeDelay: 35, // The time interval between individual opacity changes. This should always be much smaller than slideDelay.  
         wrapperID: "slideShowImages", // The ID of the <div> element that contains all of the <img> elements to be shown as a slide show.
-        buttonID: "slideShowButton", // The ID of the <button> element that toggles the slide show on and off.
-        buttonStartText: "Start Slides", // Text used in the slide show toggle button.
-        buttonStopText: "Stop Slides", // Text used in the slide show toggle button.    
         wrapperObject: null, // Will contain a reference to the <div> element that contains all of the <img> elements to be shown as a slide show.
         buttonObject: null, // If present, will contain a reference to the <button> element that toggles the slide show on and off. The initial assumption is that there is no such button element (hence the false value).
         slideImages: [], // Will contain all of the slide image objects.
@@ -63,7 +76,6 @@ function slideShow() {
 
     function initializeGlobals() {
         globals.wrapperObject = (document.getElementById(globals.wrapperID) ? document.getElementById(globals.wrapperID) : null);
-        globals.buttonObject = (document.getElementById(globals.buttonID) ? document.getElementById(globals.buttonID) : null);
 
         if (globals.wrapperObject) {
             globals.slideImages = (globals.wrapperObject.querySelectorAll('img') ? globals.wrapperObject.querySelectorAll('img') : []);
@@ -74,19 +86,12 @@ function slideShow() {
 
     function insufficientSlideShowMarkup() {
         if (!globals.wrapperObject) { // There is no wrapper element whose ID is globals.wrapperID - fatal error.
-            if (globals.buttonObject) {
-                globals.buttonObject.style.display = "none"; // Hide the not needed slide show button element when present.
-            }
             return true;
         }
 
         if (!globals.slideImages.length) { // There needs to be at least one slide <img> element - fatal error.
             if (globals.wrapperObject) {
                 globals.wrapperObject.style.display = "none"; // Hide the not needed <div> wrapper element.
-            }
-
-            if (globals.buttonObject) {
-                globals.buttonObject.style.display = "none"; // Hide the not needed slide show button element.
             }
 
             return true;
