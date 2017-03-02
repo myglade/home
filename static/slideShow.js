@@ -31,7 +31,7 @@ function slideShow() {
     /* GLOBALS **********************************************************************************************/
 
     var globals = {
-        slideDelay: 4000, // The time interval between consecutive slides.
+        slide_delay: 4000, // The time interval between consecutive slides.
         fadeDelay: 35, // The time interval between individual opacity changes. This should always be much smaller than slideDelay.  
         wrapperID: "slideShowImages", // The ID of the <div> element that contains all of the <img> elements to be shown as a slide show.
         wrapperObject: null, // Will contain a reference to the <div> element that contains all of the <img> elements to be shown as a slide show.
@@ -43,24 +43,29 @@ function slideShow() {
 
         image_queue: [],
         cur_id: -1,
-        server: "http://"
+        max_queue:3
     }
 
     /* MAIN *************************************************************************************************/
+    if (!document.getElementById(this.wrapperID))
+        return;
+
+    this.wrapper_obj = document.getElementById(this.wrapperID);
+
+    this.image_queue = [];
+    this.cur_id = -1;
+    this.image_url = "http://localhost:5000/nextimage";
+
+
+    fill_images(this.image_url, this.cur_id, this.image_queue);
+
+    return;
 
     initializeGlobals();
 
     if (insufficientSlideShowMarkup()) {
         return; // Insufficient slide show markup - exit now.
     }
-
-    // Assert: there's at least one slide image.
-
-   // if (globals.slideImages.length == 1) {
-   //     return; // The solo slide image is already being displayed - exit now.
-   // }
-
-    // Assert: there's at least two slide images.
 
     initializeSlideShowMarkup();
 
@@ -73,6 +78,46 @@ function slideShow() {
     startSlideShow();
 
     /* FUNCTIONS ********************************************************************************************/
+    /*
+    {
+      "address": "Not Found",
+      "created": "2015:12:11 15:26:20",
+      "id": 6,
+      "loc": null,
+      "name": "6.jpg",
+      "path": "media/6.jpg"
+    }
+    
+    
+    */
+
+    function fill_images(url, id, queue) {
+        if (queue.length >= globals.max_queue)
+            return;
+
+        console.log("1. url={0} id={1} q size={2}".format(url, id, queue.length));
+
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                obj = JSON.parse(xmlhttp.responseText);
+
+                console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+                var image = new Image();
+                image.obj = obj;
+                image.onload = function () {
+                    queue.push(image);
+                    console.log("4. id={0} q size={1}".format(obj['id'], queue.length));
+                    fill_images(url, obj['id'], queue);
+                }
+                image.src = "http://{0}/{1}".format(window.location.host, obj["path"])
+            }
+        }
+        query = "{0}?id={1}".format(url, id);
+        xmlhttp.open("GET", query, true);
+        xmlhttp.send();
+        console.log("2. query={0} id={1} q size={2}".format(query, id, queue.length));
+    }
 
     function initializeGlobals() {
         globals.wrapperObject = (document.getElementById(globals.wrapperID) ? document.getElementById(globals.wrapperID) : null);
@@ -221,43 +266,12 @@ function slideShow() {
         } // fadeActiveSlides
     } // transitionSlides
 
-/*
-{
-  "address": "Not Found",
-  "created": "2015:12:11 15:26:20",
-  "id": 6,
-  "loc": null,
-  "name": "6.jpg",
-  "path": "media/6.jpg"
-}
 
 
-*/
-
-    function get_next_image(queue) {
-        xmlhttp = new XMLHttpRequest();
-        xmlhttp.onreadystatechange = function () {
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                obj = JSON.parse(xmlhttp.responseText);
-                download_image(queue, obj);
-            }
-        }
-        query = "{0}?id={1}".format(globals.server, globals.cur_id); 
-        xmlhttp.open("GET", query, true);
-        xmlhttp.send();
-    }
-
-    function download_image(queue, obj) {
-        var image = new Image();
-
-        image.obj = obj;
-        image.onload = function () {
-            queue.push(image);
-        };
-        image.src = "http://{0}/{1}".format(window.location.hostname, obj["path"])
-    }
 } // slideShow
 
+
+/*
 function preload(url, timeout) {
     this.canceltimeout = function () {
         clearTimeout(this.timeout);
@@ -352,3 +366,6 @@ function show_image() {
     }
     return false;
 }
+
+
+*/
