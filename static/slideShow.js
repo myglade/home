@@ -12,6 +12,38 @@
 4. pop front if size is larger then threthold.
 
 */
+IMAGE_ID = "image_id";
+
+function createCookie(name, value, days) {
+    var expires;
+
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toGMTString();
+    }
+    else
+        expires = "";
+
+    document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+function readCookie(name, def) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ')
+            c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0)
+            return c.substring(nameEQ.length, c.length);
+    }
+    return typeof def !== 'undefined' ? def : null;
+}
+
+function eraseCookie(name) {
+    createCookie(name, "", -1);
+}
 
 
 window.addEventListener('load', slideShow, false);
@@ -30,52 +62,111 @@ function slideShow() {
 
     /* GLOBALS **********************************************************************************************/
 
-    var globals = {
-        slide_delay: 4000, // The time interval between consecutive slides.
+    var images = {
+        slideDelay: 4000, // The time interval between consecutive slides.
         fadeDelay: 35, // The time interval between individual opacity changes. This should always be much smaller than slideDelay.  
         wrapperID: "slideShowImages", // The ID of the <div> element that contains all of the <img> elements to be shown as a slide show.
         wrapperObject: null, // Will contain a reference to the <div> element that contains all of the <img> elements to be shown as a slide show.
-        buttonObject: null, // If present, will contain a reference to the <button> element that toggles the slide show on and off. The initial assumption is that there is no such button element (hence the false value).
-        slideImages: [], // Will contain all of the slide image objects.
+
         slideShowID: null, // A setInterval() ID value used to stop the slide show.
         slideShowRunning: true, // Used to record when the slide show is running and when it's not. The slide show is always initially running.    
         slideIndex: 0, // The index of the current slide image.
 
-        image_queue: [],
-        cur_id: -1,
-        max_queue:3
+        queue: [],
+        curIndex: 1,
+        maxQueueSize: 3,
+        url: "http://localhost:5000/nextimage"
     }
 
     /* MAIN *************************************************************************************************/
-    if (!document.getElementById(this.wrapperID))
+    if (!document.getElementById(images.wrapperID))
         return;
 
-    this.wrapper_obj = document.getElementById(this.wrapperID);
+    images.wrapperObject = document.getElementById(images.wrapperID);
+    if (!images.wrapperObject)
+        return;
 
-    this.image_queue = [];
-    this.cur_id = -1;
-    this.image_url = "http://localhost:5000/nextimage";
-
-
-    fill_images(this.image_url, this.cur_id, this.image_queue);
+    id = readCookie(IMAGE_ID, -1);
+    fillImages(images.url, id, images.queue, images.maxQueueSize);
 
     return;
 
-    initializeGlobals();
+    function completeImagesLoading() {
+        console.log("succeed to load images");
+        // Hide the not needed <div> wrapper element.
+       // images.wrapperObject.style.display = "none"; 
 
-    if (insufficientSlideShowMarkup()) {
-        return; // Insufficient slide show markup - exit now.
+        size = getWindowSize();
+        var slideWidthMax = size.w; // Returns a value that is always in pixel units.
+        var slideHeightMax = size.h; // Returns a value that is always in pixel units.
+
+        images.wrapperObject.style.position = "relative";
+        images.wrapperObject.style.overflow = "hidden"; // This is just a safety thing.
+        images.wrapperObject.style.width = slideWidthMax + "px";
+        images.wrapperObject.style.height = slideHeightMax + "px";
+
+        newImage = images.queue[0];
+        
+        resizeImage(newImage, size);
+        console.log(size);
+        console.log(newImage);
+        imageId = "slideimage" + images.curIndex;
+        img1 = document.getElementById(imageId);
+        images.queue[0].id = imageId;
+        img1.replaceWith(newImage);
+        
+        images.curIndex = 1 - images.curIndex;
     }
 
-    initializeSlideShowMarkup();
-
-    globals.wrapperObject.addEventListener('click', toggleSlideShow, false); // If the user clicks a slide show image, it toggles the slide show on and off.
-
-    if (globals.buttonObject) {
-        globals.buttonObject.addEventListener('click', toggleSlideShow, false); // This callback is used to toggle the slide show on and off.
+    function failImageLoading() {
+        console.log("Fail to load images");
     }
 
-    startSlideShow();
+    function resizeImage(img, winSize) {
+        if (newImage.height <= winSize.h && newImage.weight <= winSize.w) {
+            console.log("enought");
+            return;
+        }
+
+        dh = newImage.height - winSize.h;
+        dw = newImage.width - winSize.w;
+
+        // w : h = w.w : w.h
+        if (dh > 0 && dw > 0) {
+            if (dh >= dw) {
+                newImage.style.height = winSize.h + "px";
+                newImage.style.width = newImage.width * winSize.h / newImage.height + "px";
+            }
+            else {
+                newImage.style.width = winSize.w + "px";
+                newImage.style.height = newImage.height * winSize.w / newImage.width + "px";
+            }
+            return;
+        }
+
+        if (dh > 0) {
+            newImage.style.height = winSize.h + "px";
+            newImage.style.width = newImage.width * winSize.h / newImage.height + "px";
+        }
+        else {
+            newImage.style.width = winSize.w; + "px";
+            newImage.style.height = newImage.height * winSize.w / newImage.width + "px";
+        }
+    }
+
+    function getWindowSize() {
+        var body = document.documentElement || document.body;
+
+        return {
+            w: window.innerWidth || body.clientWidth,
+            h: window.innerHeight || body.clientHeight
+        }
+    }
+   // initializeSlideShowMarkup();
+   // startSlideShow();
+
+    return;
+
 
     /* FUNCTIONS ********************************************************************************************/
     /*
@@ -91,11 +182,13 @@ function slideShow() {
     
     */
 
-    function fill_images(url, id, queue) {
-        if (queue.length >= globals.max_queue)
+    function fillImages(url, id, queue, maxQueueSize) {
+        if (queue.length >= maxQueueSize) {
+            completeImagesLoading();
             return;
+        }
 
-        console.log("1. url={0} id={1} q size={2}".format(url, id, queue.length));
+        console.log("1. url={0} id={1} queue size={2}".format(url, id, queue.length));
 
         xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
@@ -106,44 +199,27 @@ function slideShow() {
                 var image = new Image();
                 image.obj = obj;
                 image.onload = function () {
-                    queue.push(image);
-                    console.log("4. id={0} q size={1}".format(obj['id'], queue.length));
-                    fill_images(url, obj['id'], queue);
+                    images.queue.push(image);
+                    console.log("4. id={0} queue size={1}".format(obj['id'], queue.length));
+                    fillImages(url, obj['id'], queue, maxQueueSize);
                 }
                 image.src = "http://{0}/{1}".format(window.location.host, obj["path"])
             }
         }
+        xmlhttp.onerror = function () {
+            failImageLoading();
+        }
+
+        xmlhttp.ontimeout = function() {
+            failImageLoading();
+        }
+
         query = "{0}?id={1}".format(url, id);
         xmlhttp.open("GET", query, true);
+        xmlhttp.timeout = 10000;
         xmlhttp.send();
-        console.log("2. query={0} id={1} q size={2}".format(query, id, queue.length));
+        console.log("2. query={0} id={1} queue size={2}".format(query, id, queue.length));
     }
-
-    function initializeGlobals() {
-        globals.wrapperObject = (document.getElementById(globals.wrapperID) ? document.getElementById(globals.wrapperID) : null);
-
-        if (globals.wrapperObject) {
-            globals.slideImages = (globals.wrapperObject.querySelectorAll('img') ? globals.wrapperObject.querySelectorAll('img') : []);
-        }
-    } // initializeGlobals
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    function insufficientSlideShowMarkup() {
-        if (!globals.wrapperObject) { // There is no wrapper element whose ID is globals.wrapperID - fatal error.
-            return true;
-        }
-
-        if (!globals.slideImages.length) { // There needs to be at least one slide <img> element - fatal error.
-            if (globals.wrapperObject) {
-                globals.wrapperObject.style.display = "none"; // Hide the not needed <div> wrapper element.
-            }
-
-            return true;
-        }
-
-        return false; // The markup expected by this library seems to be present.
-    } // insufficientSlideShowMarkup
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -151,10 +227,10 @@ function slideShow() {
         var slideWidthMax = maxSlideWidth(); // Returns a value that is always in pixel units.
         var slideHeightMax = maxSlideHeight(); // Returns a value that is always in pixel units.
 
-        globals.wrapperObject.style.position = "relative";
-        globals.wrapperObject.style.overflow = "hidden"; // This is just a safety thing.
-        globals.wrapperObject.style.width = slideWidthMax + "px";
-        globals.wrapperObject.style.height = slideHeightMax + "px";
+        images.wrapperObject.style.position = "relative";
+        images.wrapperObject.style.overflow = "hidden"; // This is just a safety thing.
+        images.wrapperObject.style.width = slideWidthMax + "px";
+        images.wrapperObject.style.height = slideHeightMax + "px";
 
         var slideCount = globals.slideImages.length;
         for (var i = 0; i < slideCount; i++) {
