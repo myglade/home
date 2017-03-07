@@ -79,6 +79,9 @@ function slideShow() {
     }
 
     /* MAIN *************************************************************************************************/
+    return;
+
+
     if (!document.getElementById(images.wrapperID))
         return;
 
@@ -88,69 +91,136 @@ function slideShow() {
 
     id = readCookie(IMAGE_ID, -1);
     fillImages(images.url, id, images.queue, images.maxQueueSize);
+    count = 0;
 
     return;
 
     function completeImagesLoading() {
         console.log("succeed to load images");
         // Hide the not needed <div> wrapper element.
-       // images.wrapperObject.style.display = "none"; 
+        //images.wrapperObject.style.display = "none"; 
 
         size = getWindowSize();
         var slideWidthMax = size.w; // Returns a value that is always in pixel units.
         var slideHeightMax = size.h; // Returns a value that is always in pixel units.
-
+/*
         images.wrapperObject.style.position = "relative";
         images.wrapperObject.style.overflow = "hidden"; // This is just a safety thing.
         images.wrapperObject.style.width = slideWidthMax + "px";
         images.wrapperObject.style.height = slideHeightMax + "px";
+        */
 
-        newImage = images.queue[0];
-        
-        resizeImage(newImage, size);
-        console.log(size);
-        console.log(newImage);
-        imageId = "slideimage" + images.curIndex;
-        img1 = document.getElementById(imageId);
-        images.queue[0].id = imageId;
-        img1.replaceWith(newImage);
-        
-        images.curIndex = 1 - images.curIndex;
+
+        startSlideShow();
+
     }
+
+    function startSlideShow() {
+        images.slideShowID = setInterval(transitionSlides, images.slideDelay);
+    } // startSlideShow
+
+
+    function transitionSlides() {
+        count++;
+
+     //   if (count > 3) {
+    //        clearInterval(images.slideShowID);
+     //       return;
+     //   }
+        nextImage = images.queue[0];
+        resizeImage(nextImage, size);
+        nextImage.style.opacity = 0;
+
+        nextImage.style.position = "absolute";
+        nextImage.style.top = "0px";
+        nextImage.style.left = "0px";
+
+        console.log(nextImage);
+
+        nextImageId = "slideimage" + (1 - images.curIndex);
+        nextImageElement = document.getElementById(nextImageId);
+
+        nextImage.id = nextImageId;
+        nextImageElement.replaceWith(nextImage);
+
+        nextImageElement = document.getElementById(nextImageId);
+
+  //      nextImageElement.style.position = "absolute";
+  //      nextImageElement.style.top = "0px";
+  //      nextImageElement.style.left = "0px";
+
+        // get current image
+        curImageId = "slideimage" + images.curIndex;
+        curImageElement = document.getElementById(curImageId);
+
+        console.log(nextImageElement);
+        console.log(curImageElement);
+
+        images.curIndex = 1 - images.curIndex;
+ 
+        //cur_image = globals.image_queue.shift();
+        //next_image = globals.image_queue[0];
+
+        var currentSlideOpacity = 1; // Fade the current slide out.
+        var nextSlideOpacity = 0; // Fade the next slide in.
+        var opacityLevelIncrement = 1 / images.fadeDelay;
+        var fadeActiveSlidesID = setInterval(fadeActiveSlides, images.fadeDelay);
+
+        function fadeActiveSlides() {
+            currentSlideOpacity -= opacityLevelIncrement;
+            nextSlideOpacity += opacityLevelIncrement;
+
+            // console.log(currentSlideOpacity + nextSlideOpacity); // This should always be very close to 1.
+
+            if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
+                curImageElement.style.opacity = currentSlideOpacity;
+                nextImageElement.style.opacity = nextSlideOpacity;
+            }
+            else {
+                curImageElement.style.opacity = 0;
+                nextImageElement.style.opacity = 1;
+                clearInterval(fadeActiveSlidesID);
+
+                images.queue.shift();
+                fillOneImage(images.url, images.queue);
+            }
+        } // fadeActiveSlides
+    } // transitionSlides
+
 
     function failImageLoading() {
         console.log("Fail to load images");
     }
 
     function resizeImage(img, winSize) {
-        if (newImage.height <= winSize.h && newImage.weight <= winSize.w) {
+        if (img.height <= winSize.h && img.weight <= winSize.w) {
             console.log("enought");
             return;
         }
 
-        dh = newImage.height - winSize.h;
-        dw = newImage.width - winSize.w;
+        dh = img.height - winSize.h;
+        dw = img.width - winSize.w;
 
         // w : h = w.w : w.h
         if (dh > 0 && dw > 0) {
             if (dh >= dw) {
-                newImage.style.height = winSize.h + "px";
-                newImage.style.width = newImage.width * winSize.h / newImage.height + "px";
+                img.style.height = winSize.h + "px";
+                img.style.width = img.width * winSize.h / img.height + "px";
             }
             else {
-                newImage.style.width = winSize.w + "px";
-                newImage.style.height = newImage.height * winSize.w / newImage.width + "px";
+                img.style.width = winSize.w + "px";
+                img.style.height = img.height * winSize.w / img.width + "px";
             }
             return;
         }
 
         if (dh > 0) {
-            newImage.style.height = winSize.h + "px";
-            newImage.style.width = newImage.width * winSize.h / newImage.height + "px";
+            img.style.height = winSize.h + "px";
+            img.style.width = img.width * winSize.h / img.height + "px";
         }
         else {
-            newImage.style.width = winSize.w; + "px";
-            newImage.style.height = newImage.height * winSize.w / newImage.width + "px";
+            img.style.width = winSize.w; + "px";
+            img.style.height = img.height * winSize.w / img.width + "px";
         }
     }
 
@@ -221,6 +291,39 @@ function slideShow() {
         console.log("2. query={0} id={1} queue size={2}".format(query, id, queue.length));
     }
 
+    function fillOneImage(url, queue) {
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                obj = JSON.parse(xmlhttp.responseText);
+
+                console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+                var image = new Image();
+                image.obj = obj;
+                image.onload = function () {
+                    images.queue.push(image);
+                    console.log("New image load");
+                }
+                image.src = "http://{0}/{1}".format(window.location.host, obj["path"])
+            }
+        }
+        xmlhttp.onerror = function () {
+            failImageLoading();
+        }
+
+        xmlhttp.ontimeout = function () {
+            failImageLoading();
+        }
+
+        id = queue[queue.length - 1].obj['id'];
+
+        query = "{0}?id={1}".format(url, id);
+        xmlhttp.open("GET", query, true);
+        xmlhttp.timeout = 10000;
+        xmlhttp.send();
+        console.log("22. query={0} id={1} queue size={2}".format(query, id, queue.length));
+    }
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     function initializeSlideShowMarkup() {
@@ -249,43 +352,7 @@ function slideShow() {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    function maxSlideWidth() {
-        var maxWidth = 0;
-        var maxSlideIndex = 0;
-        var slideCount = globals.slideImages.length;
 
-        for (var i = 0; i < slideCount; i++) {
-            if (globals.slideImages[i].width > maxWidth) {
-                maxWidth = globals.slideImages[i].width; // The width of the widest slide so far.
-                maxSlideIndex = i; // The slide with the widest width so far.
-            }
-        }
-
-        return globals.slideImages[maxSlideIndex].getBoundingClientRect().width; // Account for the image's border, padding, and margin values. Note that getBoundingClientRect() is always in units of pixels.
-    } // maxSlideWidth
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    function maxSlideHeight() {
-        var maxHeight = 0;
-        var maxSlideIndex = 0;
-        var slideCount = globals.slideImages.length;
-
-        for (var i = 0; i < slideCount; i++) {
-            if (globals.slideImages[i].height > maxHeight) {
-                maxHeight = globals.slideImages[i].height; // The height of the tallest slide so far.
-                maxSlideIndex = i; // The slide with the tallest height so far.
-            }
-        }
-
-        return globals.slideImages[maxSlideIndex].getBoundingClientRect().height; // Account for the image's border, padding, and margin values. Note that getBoundingClientRect() is always in units of pixels.
-    } // maxSlideHeight
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    function startSlideShow() {
-        globals.slideShowID = setInterval(transitionSlides, globals.slideDelay);
-    } // startSlideShow
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -293,54 +360,6 @@ function slideShow() {
         clearInterval(globals.slideShowID);
     } // haltSlideShow
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    function toggleSlideShow() {
-        if (globals.slideShowRunning) {
-            haltSlideShow();
-            if (globals.buttonObject) {
-                globals.buttonObject.textContent = globals.buttonStartText;
-            }
-        }
-        else {
-            startSlideShow();
-            if (globals.buttonObject) {
-                globals.buttonObject.textContent = globals.buttonStopText;
-            }
-        }
-        globals.slideShowRunning = !(globals.slideShowRunning);
-    } // toggleSlideShow
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    function transitionSlides() {
-        cur_image = globals.image_queue.shift();
-        next_image = globals.image_queue[0];
-
-        var currentSlideOpacity = 1; // Fade the current slide out.
-        var nextSlideOpacity = 0; // Fade the next slide in.
-        var opacityLevelIncrement = 1 / globals.fadeDelay;
-        var fadeActiveSlidesID = setInterval(fadeActiveSlides, globals.fadeDelay);
-
-        function fadeActiveSlides() {
-            currentSlideOpacity -= opacityLevelIncrement;
-            nextSlideOpacity += opacityLevelIncrement;
-
-            // console.log(currentSlideOpacity + nextSlideOpacity); // This should always be very close to 1.
-
-            if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
-                cur_image.style.opacity = currentSlideOpacity;
-                next_image.style.opacity = nextSlideOpacity;
-            }
-            else {
-                cur_image.style.opacity = 0;
-                next_image.style.opacity = 1;
-                clearInterval(fadeActiveSlidesID);
-
-                get_next_image(globals.image_queue);
-            }
-        } // fadeActiveSlides
-    } // transitionSlides
 
 
 
