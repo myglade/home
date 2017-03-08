@@ -11,6 +11,8 @@ Documentation : http://geopy.readthedocs.io/en/latest/
 
 Google Map api key (dian) : AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A
 
+pip install Pillow
+
 
 pip install flask
 

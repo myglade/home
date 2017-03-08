@@ -8,11 +8,13 @@ Documentation : http://geopy.readthedocs.io/en/latest/
 Exif
 Package : https://pypi.python.org/pypi/piexif
 
+http://piexif.readthedocs.io/en/latest/sample.html#rotate-image-by-exif-orientation
  
 """
 import decimal
 import logging
 import piexif
+from PIL import Image
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +26,8 @@ class ImageInfo(object):
         date = None
         loc = None
     
+        self.rotate_jpeg(name)
+
         exif_dict = piexif.load(name)
     
         if piexif.ExifIFD.DateTimeOriginal in exif_dict['Exif']:
@@ -59,12 +63,37 @@ class ImageInfo(object):
 
         return decimal.Decimal('%.6f' % v)
 
+    def rotate_jpeg(self, filename):
+        img = Image.open(filename)
+        if "exif" in img.info:
+            exif_dict = piexif.load(img.info["exif"])
+
+            if piexif.ImageIFD.Orientation in exif_dict["0th"]:
+                orientation = exif_dict["0th"].pop(piexif.ImageIFD.Orientation)
+                exif_bytes = piexif.dump(exif_dict)
+
+                if orientation == 2:
+                    img = img.transpose(Image.FLIP_LEFT_RIGHT)
+                elif orientation == 3:
+                    img = img.rotate(180)
+                elif orientation == 4:
+                    img = img.rotate(180).transpose(Image.FLIP_LEFT_RIGHT)
+                elif orientation == 5:
+                    img = img.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
+                elif orientation == 6:
+                    img = img.rotate(-90)
+                elif orientation == 7:
+                    img = img.rotate(90).transpose(Image.FLIP_LEFT_RIGHT)
+                elif orientation == 8:
+                    img = img.rotate(90)
+
+                img.save(filename, exif=exif_bytes)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
     imageinfo = ImageInfo()
-    print imageinfo.get("media/1.jpg")
+    print imageinfo.get("static/media/2.jpg")
 
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")

@@ -23,7 +23,13 @@ def hello():
 
 @app.route('/<path:path>')
 def static_file(path):
+    return
+
     return app.send_static_file(path)
+
+@app.route('/media/<path:path>')
+def test(path):
+    return send_file("D:\\github\\home\\static\\media\\" + path, mimetype='image/jpg')
 
 @app.route("/nextimage")
 def next_image():
