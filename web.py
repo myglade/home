@@ -3,7 +3,8 @@ from flask import (
     request,
     jsonify,
     send_file,
-    render_template
+    render_template,
+    send_from_directory
     )
 import os.path
 import random
@@ -23,13 +24,11 @@ def hello():
 
 @app.route('/<path:path>')
 def static_file(path):
-    return
-
     return app.send_static_file(path)
 
 @app.route('/media/<path:path>')
-def test(path):
-    return send_file("D:\\github\\home\\static\\media\\" + path, mimetype='image/jpg')
+def media_file(path):
+    return send_from_directory("media", path)
 
 @app.route("/nextimage")
 def next_image():
@@ -37,6 +36,11 @@ def next_image():
     img = image_manager.get_newimage(id)
     return jsonify(img)
 
+@app.route("/resetimagedb")
+def reset_imagedb():
+    image_manager.reset_update_imagedb()
+
+    return "Success"
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,

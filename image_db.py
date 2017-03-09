@@ -29,6 +29,10 @@ class ImageDb(db.Db):
         
         self.execute("CREATE INDEX IF NOT EXISTS created_index on %s(created)" % self.table)
         
+    def reset(self):
+        self.execute("DELETE FROM %s" % self.table)
+        self.execute("vacuum");
+
     def put(self, name, path, created, loc):
         try:
             self.execute("INSERT INTO %s(name,path,created,loc) VALUES(?,?,?,?)" % self.table,

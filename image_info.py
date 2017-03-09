@@ -89,6 +89,8 @@ class ImageInfo(object):
 
                 img.save(filename, exif=exif_bytes)
 
+image_info = ImageInfo()
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')

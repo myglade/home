@@ -25,6 +25,11 @@ class Db(object):
         self.cursor = self.conn.cursor()
         # except lite.Error, e:
 
+    def __del__(self):
+        if self.conn:
+            self.conn.close()
+            del self.conn
+                     
     def execute(self, *args):
         self.cursor.execute(*args)
         

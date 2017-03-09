@@ -79,8 +79,6 @@ function slideShow() {
     }
 
     /* MAIN *************************************************************************************************/
-    return;
-
 
     if (!document.getElementById(images.wrapperID))
         return;
