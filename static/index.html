@@ -9,12 +9,34 @@
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <title>Slide Show</title>
 
+    <style>
+        #slideShowImages { /* The following CSS rules are optional. */
+            background-color: black;
+            margin: 0;
+        }
+        h2 {
+            position: absolute;
+            top: 500px;
+            left: 200px;
+            width: 100%;
+        }
+        /*  https://css-tricks.com/text-blocks-over-image/  */
+        h2 span {
+            color: white;
+            font: bold 24px/45px Helvetica, Sans-Serif;
+            letter-spacing: -1px;
+            background: rgb(255, 0, 0); /* fallback color */
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+        }
+    </style>
 </head>
 
 <body>
     <div id="slideShowImages">
         <img id="slideimage0" />
         <img id="slideimage1" />
+        <h2><span>A Movie in the Park Kung Fu Panda</span></h2>
     </div>
     <script src="slideShow.js?v={{ rand }}"></script>
 </body>

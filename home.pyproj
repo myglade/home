@@ -26,11 +26,6 @@
     <Content Include="media\5.jpg" />
     <Content Include="media\6.jpg" />
     <Content Include="static\index.html" />
-    <Content Include="static\media\1.jpg" />
-    <Content Include="static\media\2.jpg" />
-    <Content Include="static\media\3.jpg" />
-    <Content Include="static\media\4.jpg" />
-    <Content Include="static\media\5.jpg" />
     <Content Include="README.md" />
     <Content Include="static\slideShow.js" />
   </ItemGroup>
