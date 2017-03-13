@@ -6,7 +6,9 @@ import os
 from threading import Event, Thread
 import time
 
-log = logging.getLogger(__name__)
+import config
+
+log = logging.getLogger(config.log)
 
 class MediaObject(object):
     def __init__(self, name, ext, dir, file_path):

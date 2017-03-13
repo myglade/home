@@ -6,12 +6,14 @@ import time
 import urllib, urlparse
 import urllib2
 
+import config
+
 """
 https://wiki.videolan.org/VLC_HTTP_requests/
 """
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(config.log)
 
 def path2url(path):
     return urlparse.urljoin('file:', urllib.pathname2url(path))

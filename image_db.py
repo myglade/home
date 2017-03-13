@@ -1,11 +1,12 @@
 import logging
 import sqlite3
 
+import config
 import db
 from media import Media
 from _sqlite3 import Row
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(config.log)
 
 class ImageDb(db.Db):
     """

@@ -35,6 +35,9 @@
     </Compile>
     <Compile Include="db.py" />
     <Compile Include="gps_db.py" />
+    <Compile Include="imagelist.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="image_db.py" />
     <Compile Include="image_info.py" />
     <Compile Include="image_manager.py" />

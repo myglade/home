@@ -1,4 +1,5 @@
-
+log = "slideshow"
 image_db = "image.sqlite"
 gps_db = "gps_db"
-image_path = "media\\"
+image_path = "y:\\Pictures"
+web_media_path = "media"

@@ -1,11 +1,12 @@
-import logging
+import config
 from geopy.geocoders import Nominatim
 from geopy.geocoders import GoogleV3
+import logging
 
 from db import Db
 from _sqlite3 import Row
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(config.log)
 
 # erin
 GOOGLE_API_1 = 'AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A'

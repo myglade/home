@@ -1,16 +1,18 @@
+import datetime
+import logging
+import os
+
 import config
+from imagelist import Imagelist
 from gps_db import GpsDb
 from image_db import ImageDb
 import image_info
-import logging
-from media import Media, MediaObject
-import os
 
 '''
 https://wiki.gnome.org/Projects/gexiv2
 '''
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(config.log)
 
 class ImageManager(object):
     def __init__(self, path=None):
@@ -54,23 +56,31 @@ class ImageManager(object):
             prop = self.get_image_property(image)
             self.update_imagedb(image, prop)
 
-    def reset_and_update_imagedb(self, restart_cron=False):
+    def build_imagedb(self, reset, restart_cron=False):
+        def image_add(name, rel_path, path, ext):
+            log.debug('scan %s', path)
+
+            date = None
+            try:
+                date, loc = image_info.image_info.get(path)
+            except Exception as e:
+                loc = ""
+
+            if not date:
+                date = str(datetime.datetime.fromtimestamp(os.path.getmtime(path)))
+
+            self.imagedb.put(name, rel_path, date, loc)
+
         if not self.path:
             log.error("path is not set")
             return
 
-        self.imagedb.reset()
+        if reset:
+            self.imagedb.reset()
+
         self.stop()
-        media = Media(self.path, "image")
-        imagelist = media.scan()
-
-        for value in imagelist.values():
-            for name in value.file_path.keys():
-                path = name
-                break
-
-            date, loc = image_info.image_info.get(path)
-            self.imagedb.put(value.fullname(), path, date, loc)
+        imagelist = Imagelist(self.path)
+        images = imagelist.scan(image_add)
 
         if restart_cron:
             self.start()
@@ -97,13 +107,17 @@ image_mgr = ImageManager()
 def get_newimage(id):
     return image_mgr.get_newimage(id)
 
-def reset_update_imagedb():
-    return image_mgr.reset_and_update_imagedb()
+def process(type):
+    if type == "build":
+        return image_mgr.build_imagedb(True)
+    elif type == 'update':
+        return image_mgr.build_imagedb(False)
+
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
     
     mgr = ImageManager("static\\media\\")
-    mgr.reset_and_update_imagedb()
     print "done"

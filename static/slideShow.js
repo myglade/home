@@ -13,6 +13,9 @@
 
 */
 IMAGE_ID = "image_id";
+DESC_ID = "imageDesc";
+IMAGE1 = "slideimage0";
+IMAGE2 = "slideimage1";
 
 function createCookie(name, value, days) {
     var expires;
@@ -71,6 +74,8 @@ function slideShow() {
         slideShowID: null, // A setInterval() ID value used to stop the slide show.
         slideShowRunning: true, // Used to record when the slide show is running and when it's not. The slide show is always initially running.    
 
+        imageObjects: [],
+        imageDescObjects: [],
         width: 0,
         height: 0,
         queue: [],
@@ -89,7 +94,43 @@ function slideShow() {
         return;
 
     document.body.style.overflow = 'hidden';
+
+    size = getWindowSize();
+    images.width = size.w; // Returns a value that is always in pixel units.
+    images.height = size.h; // Returns a value that is always in pixel units.
+
+    images.wrapperObject.style.position = "absolute";
+    images.wrapperObject.style.overflow = "hidden"; // This is just a safety thing.
+    images.wrapperObject.style.width = images.width + "px";
+    images.wrapperObject.style.height = images.height + "px";
+    images.wrapperObject.style.top = 0;
+    images.wrapperObject.style.left = 0;
+
+    images.imageObjects.push(document.getElementById(IMAGE1));
+    images.imageObjects.push(document.getElementById(IMAGE2));
+
+    for (var i = 0; i < images.imageObjects.length; i++) {
+        var div = images.imageObjects[i];
+        div.style.position = "absolute";
+        div.style.overflow = "hidden";  
+        div.style.opacity = 0;
+        div.style.width = images.width + "px";
+        div.style.height = images.height + "px";
+        div.style.top = 0 + "px";
+        div.style.left = 0 + "px";
+
+        var desc = div.querySelectorAll('span')[0];
+        images.imageDescObjects.push(desc);
+
+        desc.style.position = "absolute";
+        desc.style.top = (size.h - 100) + "px";
+        desc.style.left = 10 + "px";
+    }
+
+ //   console.log(images.descObject);
+
     id = readCookie(IMAGE_ID, -1);
+    id = 14292;
     fillImages(images.url, id, images.queue, images.maxQueueSize);
 
     return;
@@ -188,21 +229,6 @@ function slideShow() {
 
     function completeImagesLoading() {
         console.log("succeed to load images");
-        // Hide the not needed <div> wrapper element.
-        //images.wrapperObject.style.display = "none"; 
-
-        size = getWindowSize();
-        images.width = size.w; // Returns a value that is always in pixel units.
-        images.height = size.h; // Returns a value that is always in pixel units.
-
-        images.wrapperObject.style.position = "absolute";
-        images.wrapperObject.style.overflow = "hidden"; // This is just a safety thing.
-        images.wrapperObject.style.width = images.width + "px";
-        images.wrapperObject.style.height = images.height + "px";
-        images.wrapperObject.style.top = 0;
-        images.wrapperObject.style.left = 0;
-
-        //console.log("1." + size.w + ":" + size.h)
         startSlideShow();
     }
 
@@ -212,11 +238,11 @@ function slideShow() {
             return;
         }
 
-        dh = img.height - winSize.h;
-        dw = img.width - winSize.w;
+        var dh = img.height - winSize.h;
+        var dw = img.width - winSize.w;
 
-        height = 0;
-        width = 0;
+        var height = 0;
+        var width = 0;
 
         // w : h = w.w : w.h
         if (dh > 0 && dw > 0) {
@@ -240,7 +266,6 @@ function slideShow() {
             }
         }
 
-        nextImage.style.opacity = 0;
         img.style.position = "absolute";
         img.style.height = height + "px";
         img.style.width = width + "px";
@@ -262,33 +287,30 @@ function slideShow() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     function transitionSlides() {
-        nextImage = images.queue[0];
-        adjustImage(nextImage, size);
+        var nextImage = images.queue[0];
+        var nextImageElement = images.imageObjects[1 - images.curIndex];
 
-        nextImageId = "slideimage" + (1 - images.curIndex);
-        nextImageElement = document.getElementById(nextImageId);
-        if (!nextImageElement) {
-            console.log("next image is NULL");
-            return;
-        }
+        var elementImg = nextImageElement.querySelectorAll('img')[0];
+        elementImg.replaceWith(nextImage);
+        // after replace, elementImg becomes invalid. refind it
+        elementImg = nextImageElement.querySelectorAll('img')[0];
+        adjustImage(elementImg, size);
 
-        nextImage.id = nextImageId;
-        nextImageElement.replaceWith(nextImage);
-        // after replace, ele should be obtained again
-        nextImageElement = document.getElementById(nextImageId);
+        images.imageDescObjects[1 - images.curIndex].innerHTML = nextImage.obj["desc"]
 
         // get current image
-        curImageId = "slideimage" + images.curIndex;
-        curImageElement = document.getElementById(curImageId);
-        if (!curImageElement) {
-            console.log("curImageElement is NULL");
-            window.location.reload(false); 
-            return;
-        }
+        curImageElement = images.imageObjects[images.curIndex];
 
-        images.curIndex = 1 - images.curIndex;
         fadeTransition(curImageElement, nextImageElement);
     } // transitionSlides
+
+    function completeTransition(curImageElement, nextImageElement) {
+        createCookie(IMAGE_ID, images.queue[0].obj["id"]);
+        images.queue.shift();
+        images.curIndex = 1 - images.curIndex;
+        //console.log(nextImageElement.obj)
+        fillOneImage(images.url, images.queue);
+    }
 
     function fadeTransition(curImageElement, nextImageElement) {
         var currentSlideOpacity = 1; // Fade the current slide out.
@@ -310,13 +332,7 @@ function slideShow() {
                 nextImageElement.style.opacity = 1;
                 clearInterval(fadeActiveSlidesID);
 
-                if (curImageElement.obj)
-                    createCookie(IMAGE_ID, curImageElement.obj["id"]);
-                else
-                    createCookie(IMAGE_ID, -1);
-
-                images.queue.shift();
-                fillOneImage(images.url, images.queue);
+                completeTransition(curImageElement, nextImageElement);
             }
         } // fadeActiveSlides
     }

@@ -15,8 +15,11 @@ import decimal
 import logging
 import piexif
 from PIL import Image
+import os
 
-log = logging.getLogger(__name__)
+import config
+
+log = logging.getLogger(config.log)
 
 class ImageInfo(object):
     def __init__(self, *args, **kwargs):
@@ -26,7 +29,15 @@ class ImageInfo(object):
         date = None
         loc = None
     
-        self.rotate_jpeg(name)
+        _, ext = os.path.splitext(name)
+        if ext not in [".tiff", ".jpg"]:
+            raise Exception("Invalid extension. %s" % name)
+
+        try:
+            self.rotate_jpeg(name)
+        except Exception as e:
+            log.error("Fail to adjust rotation %s. e-%s", name, e)
+            raise e
 
         exif_dict = piexif.load(name)
     
@@ -70,6 +81,9 @@ class ImageInfo(object):
 
             if piexif.ImageIFD.Orientation in exif_dict["0th"]:
                 orientation = exif_dict["0th"].pop(piexif.ImageIFD.Orientation)
+                if orientation == 1:
+                    return
+
                 exif_bytes = piexif.dump(exif_dict)
 
                 if orientation == 2:
@@ -96,6 +110,6 @@ if __name__ == "__main__":
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
     imageinfo = ImageInfo()
-    print imageinfo.get("static/media/2.jpg")
+    print imageinfo.get("y:\\Pictures\\2015-2\\IMG_1179.png")
 
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")
