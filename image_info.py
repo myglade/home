@@ -19,7 +19,7 @@ import os
 
 import config
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 class ImageInfo(object):
     def __init__(self, *args, **kwargs):

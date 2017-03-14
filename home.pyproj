@@ -5,13 +5,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{56e79734-c2b1-4cac-b30b-19ff23bf601c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>web.py</StartupFile>
+    <StartupFile>config.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <InterpreterId />
+    <InterpreterId>Global|PythonCore|2.7</InterpreterId>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -19,6 +20,7 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="home.ini" />
     <Content Include="media\1.jpg" />
     <Content Include="media\2.jpg" />
     <Content Include="media\3.jpg" />
@@ -53,6 +55,9 @@
     <Folder Include="media\" />
     <Folder Include="media\" />
     <Folder Include="static\" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|2.7" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

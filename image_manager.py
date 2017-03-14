@@ -12,13 +12,14 @@ import image_info
 https://wiki.gnome.org/Projects/gexiv2
 '''
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 class ImageManager(object):
     def __init__(self, path=None):
         self.media = None
         self.imagedb = ImageDb(config.image_db)
         self.gpsdb = GpsDb(config.gps_db)
+        self.reset = False
 
         if path:
             self.path = path
@@ -88,6 +89,11 @@ class ImageManager(object):
     def get_newimage(self, id):
        if not id:
            id = -1
+
+       if self.reset:
+           id = -1
+           self.reset = False
+
        img = self.imagedb.get_next_by_time(id) 
        address = None
        try:
@@ -112,7 +118,8 @@ def process(type):
         return image_mgr.build_imagedb(True)
     elif type == 'update':
         return image_mgr.build_imagedb(False)
-
+    elif type == 'reset':
+        image_mgr.reset = True
 
 
 if __name__ == "__main__":

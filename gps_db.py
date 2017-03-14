@@ -6,7 +6,7 @@ import logging
 from db import Db
 from _sqlite3 import Row
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 # erin
 GOOGLE_API_1 = 'AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A'

@@ -2,7 +2,7 @@ import config
 import logging
 import sqlite3
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 def dict_factory(cursor, row):
     d = {}

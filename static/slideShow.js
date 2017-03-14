@@ -14,6 +14,8 @@
 */
 IMAGE_ID = "image_id";
 DESC_ID = "imageDesc";
+SLIDE_DELAY = "slideDelay"
+FADE_DELAY = "fadeDelay"
 IMAGE1 = "slideimage0";
 IMAGE2 = "slideimage1";
 
@@ -130,7 +132,9 @@ function slideShow() {
  //   console.log(images.descObject);
 
     id = readCookie(IMAGE_ID, -1);
-    id = 14292;
+    images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay)
+    images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay)
+
     fillImages(images.url, id, images.queue, images.maxQueueSize);
 
     return;
@@ -305,7 +309,22 @@ function slideShow() {
     } // transitionSlides
 
     function completeTransition(curImageElement, nextImageElement) {
-        createCookie(IMAGE_ID, images.queue[0].obj["id"]);
+        obj = images.queue[0].obj
+        createCookie(IMAGE_ID, obj["id"]);
+
+        if (images.slideDelay != parseInt(obj["slide_delay"])) {
+            images.slideDelay = parseInt(obj["slide_delay"]);
+            createCookie(SLIDE_DELAY, images.slideDelay);
+            clearInterval(images.slideShowID);
+            images.slideShowID = setInterval(transitionSlides, images.slideDelay);
+            console.log("slideDelay changes to " + images.slideDelay);
+        }
+        if (images.fadeDelay != parseInt(obj["fade_delay"])) {
+            images.fadeDelay = parseInt(obj["fade_delay"]);
+            createCookie(FADE_DELAY, images.fadeDelay);
+            console.log("fadeDelay changes to " + images.fadeDelay);
+        }
+
         images.queue.shift();
         images.curIndex = 1 - images.curIndex;
         //console.log(nextImageElement.obj)

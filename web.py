@@ -21,7 +21,7 @@ import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 @app.route("/index.html")
 def hello():
@@ -31,21 +31,22 @@ def hello():
 def static_file(path):
     return app.send_static_file(path)
 
-@app.route('/%s/<path:path>' % config.web_media_path)
+@app.route('/%s/<path:path>' % config.get["web_media_path"])
 def media_file(path):
     #dir = os.path.join(config.image_path, path)
-    return send_from_directory(config.image_path, path)
+    return send_from_directory(config.get["image_path"], path)
 
 @app.route("/nextimage")
 def next_image():
     id = request.args.get('id')
     img = image_manager.get_newimage(id)
 
-    img['path'] = "%s/%s" % (config.web_media_path, 
+    img['path'] = "%s/%s" % (config.get["web_media_path"], 
                              img['path'].replace(os.path.sep, '/'))
 
     log.debug("oid=%s, id=%s", id, img['id'])
 
+    # date transformation
     try:
         d = img['created'][:10]
         year = int(d[:4])
@@ -56,6 +57,7 @@ def next_image():
     except Exception as e:
         log.error("id=%s e=%s", img['id'], e)
 
+    # address transformation
     addr = img['address']
     if addr != "Not Found":
         t = addr.split(',')
@@ -64,8 +66,9 @@ def next_image():
         else:
             addr_desc = addr
 
-    img['desc'] = created_time + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + \
-                   "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + addr_desc
+    img['desc'] = config.get["desc_format"] % (created_time, addr_desc)
+    img['slide_delay'] = config.get["slide_delay"]
+    img['fade_delay'] = config.get["fade_delay"]
 
     s = jsonify(img)
     log.debug(s.data)
@@ -82,7 +85,7 @@ if __name__ == "__main__":
 
     formatter = logging.Formatter('%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    fileHandler = TimedRotatingFileHandler("log\\%s.log" % config.log,
+    fileHandler = TimedRotatingFileHandler("log\\%s.log" % config.logname,
                                             when="d",
                                             interval=1,
                                             backupCount=20)

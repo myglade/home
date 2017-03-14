@@ -8,7 +8,7 @@ import time
 
 import config
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 class Image(object):
     def __init__(self, name, rel_path):

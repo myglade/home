@@ -13,7 +13,7 @@ https://wiki.videolan.org/VLC_HTTP_requests/
 """
 
 
-log = logging.getLogger(config.log)
+log = logging.getLogger(config.logname)
 
 def path2url(path):
     return urlparse.urljoin('file:', urllib.pathname2url(path))
