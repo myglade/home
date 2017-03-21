@@ -17,14 +17,14 @@ log = logging.getLogger(config.logname)
 class ImageManager(object):
     def __init__(self, path=None):
         self.media = None
-        self.imagedb = ImageDb(config.image_db)
-        self.gpsdb = GpsDb(config.gps_db)
+        self.imagedb = ImageDb(config.get("image_db"))
+        self.gpsdb = GpsDb(config.get("gps_db"))
         self.reset = False
 
         if path:
             self.path = path
         else:
-            self.path = config.image_path
+            self.path = config.get("image_path")
 
         return super(ImageManager, self).__init__()
         

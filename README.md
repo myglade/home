@@ -16,6 +16,8 @@ pip install Pillow
 
 pip install flask
 
+pip install SQLAlchemy
+
 
 
 Client Functions

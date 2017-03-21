@@ -22,13 +22,13 @@ IMAGE2 = "slideimage1";
 function createCookie(name, value, days) {
     var expires;
 
-    if (days) {
-        var date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = "; expires=" + date.toGMTString();
+    if (!days) {
+        days = 365;
     }
-    else
-        expires = "";
+
+    var date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    expires = "; expires=" + date.toGMTString();
 
     document.cookie = name + "=" + value + expires + "; path=/";
 }
@@ -36,6 +36,7 @@ function createCookie(name, value, days) {
 function readCookie(name, def) {
     var nameEQ = name + "=";
     var ca = document.cookie.split(';');
+    console.log("+++++++++++++[" + ca);
     for (var i = 0; i < ca.length; i++) {
         var c = ca[i];
         while (c.charAt(0) == ' ')
@@ -51,7 +52,7 @@ function eraseCookie(name) {
 }
 
 
-window.addEventListener('load', slideShow, false);
+//window.addEventListener('load', slideShow, false);
 
 String.prototype.format = function () {
     var s = this,
@@ -83,11 +84,11 @@ function slideShow() {
         queue: [],
         curIndex: 1,
         maxQueueSize: 3,
-        url: "http://localhost:5000/nextimage"
+        url: "nextimage"
     }
 
     /* MAIN *************************************************************************************************/
-
+    console.log("start");
     if (!document.getElementById(images.wrapperID))
         return;
 
@@ -97,7 +98,7 @@ function slideShow() {
 
     document.body.style.overflow = 'hidden';
 
-    size = getWindowSize();
+    var size = getWindowSize();
     images.width = size.w; // Returns a value that is always in pixel units.
     images.height = size.h; // Returns a value that is always in pixel units.
 
@@ -130,12 +131,14 @@ function slideShow() {
     }
 
  //   console.log(images.descObject);
-
-    id = readCookie(IMAGE_ID, -1);
+    console.log("READ COOKIE");
+    var id = readCookie(IMAGE_ID, -1);
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay)
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay)
+    var url = "http://{0}/{1}".format(window.location.host, images.url);
 
-    fillImages(images.url, id, images.queue, images.maxQueueSize);
+    console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
+    fillImages(url, id, images.queue, images.maxQueueSize);
 
     return;
 
@@ -164,15 +167,16 @@ function slideShow() {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 obj = JSON.parse(xmlhttp.responseText);
 
-                //console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+                console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
                 var image = new Image();
                 image.obj = obj;
                 image.onload = function () {
                     images.queue.push(image);
-                    //console.log("4. id={0} queue size={1}".format(obj['id'], queue.length));
+                    console.log("4. id={0} queue size={1}".format(obj['id'], queue.length));
                     fillImages(url, obj['id'], queue, maxQueueSize);
                 }
                 image.src = "http://{0}/{1}".format(window.location.host, obj["path"])
+                console.log("image.src " + image.src);
             }
         }
         xmlhttp.onerror = function () {
@@ -191,7 +195,7 @@ function slideShow() {
     }
 
     function fillOneImage(url, queue) {
-        xmlhttp = new XMLHttpRequest();
+        var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 obj = JSON.parse(xmlhttp.responseText);
@@ -237,13 +241,20 @@ function slideShow() {
     }
 
     function adjustImage(img, winSize) {
-        if (img.height <= winSize.h && img.width <= winSize.w) {
+        console.log(winSize);
+        console.log(img.clientHeight + ":" + img.clientWidth);
+
+        if (img.clientHeight <= winSize.h && img.clientWidth <= winSize.w) {
+            img.style.position = "absolute";
+            img.style.left = (winSize.w - img.clientWidth) / 2 + "px";
+            img.style.top = (winSize.h - img.clientHeight) / 2 + "px";
+
             console.log("size is smaller than canvas");
             return;
         }
 
-        var dh = img.height - winSize.h;
-        var dw = img.width - winSize.w;
+        var dh = img.clientHeight - winSize.h;
+        var dw = img.clientWidth - winSize.w;
 
         var height = 0;
         var width = 0;
@@ -252,31 +263,34 @@ function slideShow() {
         if (dh > 0 && dw > 0) {
             if (dh >= dw) {
                 height = winSize.h;
-                width = img.width * winSize.h / img.height;
+                width = img.clientWidth * winSize.h / img.clientHeight;
             }
             else {
                 width = winSize.w;
-                height = img.height * winSize.w / img.width;
+                height = img.clientHeight * winSize.w / img.clientWidth;
             }
         }
         else {
             if (dh > 0) {
                 height = winSize.h;
-                width = img.width * winSize.h / img.height;
+                width = img.clientWidth * winSize.h / img.clientHeight;
+                console.log("1." + height + ":" + width)
             }
             else {
                 width = winSize.w;
-                height = img.height * winSize.w / img.width;
+                height = img.clientHeight * winSize.w / img.clientWidth;
+                console.log("2." + height + ":" + width)
             }
         }
 
         img.style.position = "absolute";
         img.style.height = height + "px";
         img.style.width = width + "px";
-        img.style.left = (images.width - width) / 2 + "px";
-        img.style.top = (images.height - height) / 2 + "px";
+        img.style.left = (winSize.w - width) / 2 + "px";
+        img.style.top = (winSize.h - height) / 2 + "px";
 
         //console.log("2." + width + ":" + height)
+        console.log("3." + img.style.top + ":" + img.style.left)
     }
 
     function getWindowSize() {
@@ -295,10 +309,14 @@ function slideShow() {
         var nextImageElement = images.imageObjects[1 - images.curIndex];
 
         var elementImg = nextImageElement.querySelectorAll('img')[0];
-        elementImg.replaceWith(nextImage);
+        var parent = elementImg.parentNode;
+        parent.removeChild(elementImg);
+        parent.insertBefore(nextImage, parent.childNodes[0]);
+
+        //elementImg.replaceWith(nextImage);
         // after replace, elementImg becomes invalid. refind it
         elementImg = nextImageElement.querySelectorAll('img')[0];
-        adjustImage(elementImg, size);
+        adjustImage(elementImg, { w: images.width, h: images.height } );
 
         images.imageDescObjects[1 - images.curIndex].innerHTML = nextImage.obj["desc"]
 
@@ -328,7 +346,8 @@ function slideShow() {
         images.queue.shift();
         images.curIndex = 1 - images.curIndex;
         //console.log(nextImageElement.obj)
-        fillOneImage(images.url, images.queue);
+        var url = "http://{0}/{1}".format(window.location.host, images.url);
+        fillOneImage(url, images.queue);
     }
 
     function fadeTransition(curImageElement, nextImageElement) {

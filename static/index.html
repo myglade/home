@@ -32,9 +32,10 @@
             left: 200px;
         }
     </style>
+    <script src="slideShow.js?v={{ rand }}"></script>
 </head>
 
-<body>
+<body onload="slideShow()">
     <div id="slideShowImages">
         <div id="slideimage0">
             <img />
@@ -45,7 +46,6 @@
             <span class="imgdesc" id="imageDesc"></span>
         </div>
     </div>
-    <script src="slideShow.js?v={{ rand }}"></script>
 </body>
 
 </html>
