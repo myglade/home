@@ -20,6 +20,8 @@ import image_manager
 import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import socket
+import sys
 
 log = logging.getLogger(config.logname)
 
@@ -86,6 +88,17 @@ def imagedb(type):
 def static_file(path):
     return app.send_static_file(path)
 
+def is_port_used(port):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        s.bind(("0.0.0.0", port))
+    except socket.error as e:
+        return True
+
+    s.close()
+    return False
+
 if __name__ == "__main__":
     logging.basicConfig(filename="log\\ss.log", level=logging.DEBUG,
                     format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
@@ -102,7 +115,12 @@ if __name__ == "__main__":
     consoleHandler.setFormatter(formatter)
     log.addHandler(consoleHandler)
 
-    app.run(host= '0.0.0.0', port=5000, threaded=True)
+    port = 5000
+    if is_port_used(port):
+        log.error("port is being used.  Quit")
+        sys.exit(0)
+
+    app.run(host= '0.0.0.0', port=port, threaded=True)
 
 
 # http://192.168.1.10:5000/media/2009-1/SNC13009.jpg

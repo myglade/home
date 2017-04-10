@@ -2,13 +2,35 @@ import logging
 import sqlite3
 
 import config
-import db
 from media import Media
 from _sqlite3 import Row
 
 log = logging.getLogger(config.logname)
 
-class ImageDb(db.Db):
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime, timedelta
+from sqlalchemy import *
+from db import Base
+
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import sessionmaker
+
+class Image(Base):
+    __tablename__ = "image"
+    __table_args__ = (Index('created_index', "created"), )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(128), nullable=False)
+    path = Column(String(512), nullable=False)
+    created = Column(DateTime, nullable=False)
+    loc = Column(String(128))
+
+    def __repr__(self):
+        created = self.created.strftime("%Y-%m-%d %H:%M:%S")
+        return "<Image (id=%d, name='%s', path='%s', created='%s', loc='%s')>" % \
+                (self.id, self.name, self.path, created, self.loc)
+
+class ImageDb(object):
     """
         name : file name
         path : relative path
@@ -17,37 +39,49 @@ class ImageDb(db.Db):
     """
     table = "image"
     
-    def __init__(self, db_file, conn=None):
-        super(ImageDb, self).__init__(db_file, conn)
-
-        self.execute('''CREATE TABLE IF NOT EXISTS %s(
-                            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                            name      TEXT,
-                            path      TEXT UNIQUE,
-                            created   DATETIME,
-                            loc       TEXT)
-                    ''' % self.table)
-        
-        self.execute("CREATE INDEX IF NOT EXISTS created_index on %s(created)" % self.table)
+    def __init__(self, db):
+        self.db = db
+        self.session = db.session
         
     def reset(self):
         self.execute("DELETE FROM %s" % self.table)
         self.execute("vacuum");
 
     def put(self, name, path, created, loc):
-        try:
-            self.execute("INSERT INTO %s(name,path,created,loc) VALUES(?,?,?,?)" % self.table,
-                        (name, path, created, loc))
-            
-            log.debug("Insert name=%s, path=%s, created=%s, loc=%s", name, path, created, loc)
-            self.commit()
-        except sqlite3.IntegrityError:
-            log.info("image already exists. name=%s, path=%s, created=%s, loc=%s", 
-                     name, path, created, loc)
+        created_time = created
+        # datetime(2017, 12, 5)
+        image = Image(name=name, path=path, created=created_time, loc=loc)
+        self.session.add(image)
+        self.session.commit()
 
     def get_next_by_time(self, id):
         """ by time """
         
+        count = self.session.query(Image).filter(Image.id == id).count()
+        if not count:
+            image = self.session.query(Image).order_by(Image.created).first()
+            return image
+
+        created = image.created
+        image = self.session.query(Image).\
+                filter(and_(Image.id > id, Image.created == created)).\
+                order_by(Image.id).first()
+
+        if image:
+            return image
+
+        image = self.session.query(Image).\
+                filter(Image.created > created).\
+                order_by(Image.created, Image.id).first()
+
+        if image:
+            return image
+
+        image = self.session.query(Image).\
+                order_by(Image.created, Image.id).first()
+
+        return image
+"""
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))
         row = self.cursor.fetchone()
         if not row:
@@ -78,7 +112,8 @@ class ImageDb(db.Db):
         row = self.cursor.fetchone()
         
         return row
-    
+"""
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')

@@ -3,6 +3,12 @@ from geopy.geocoders import Nominatim
 from geopy.geocoders import GoogleV3
 import logging
 
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime, timedelta
+from sqlalchemy import Table, Column, Integer, String, DateTime, Index
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import sessionmaker
+
 from db import Db
 from _sqlite3 import Row
 
@@ -11,21 +17,24 @@ log = logging.getLogger(config.logname)
 # erin
 GOOGLE_API_1 = 'AIzaSyAaN2AdvaguOICezg-0igGuJrk1sz8GQ-A'
 
+class Gps(Base):
+    __tablename__ = "gps"
+    __table_args__ = (Index('loc_index', "loc"), )
 
-class GpsDb(Db):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    loc = Column(String(128))
+    address = Column(String(512))
+
+    def __repr__(self):
+        return "<Gps (id=%d, loc='%s', address='%s')>" % \
+                (self.id, self.loc, self.address)
+
+class GpsDb():
     table = 'gps'
 
-    def __init__(self, db_file, conn=None):
-        super(GpsDb, self).__init__(db_file, conn)
-
-        self.execute('''CREATE TABLE IF NOT EXISTS %s(
-                            id      INTEGER PRIMARY KEY AUTOINCREMENT,
-                            loc     TEXT,
-                            address TEXT
-                        );
-                        ''' % self.table)
-
-        self.execute("CREATE INDEX IF NOT EXISTS loc_index on %s(loc)" % self.table)
+    def __init__(self, db):
+        self.db = db
+        self.session = db.session
     
     def get(self, loc):
         self.execute("SELECT * FROM %s WHERE loc=?" % self.table, (loc,))
@@ -38,9 +47,10 @@ class GpsDb(Db):
         return row["address"]
     
     def put(self, loc, address):
-        self.execute("INSERT INTO %s(loc, address) VALUES(?,?)" % self.table, 
-                            (loc, address))
-        self.commit()
+        gps = Gps(loc=loc, address=address)
+        self.session.add(gps)
+        self.session.commit()
+
         log.debug("save %s, %s", loc, address)
         
     def get_location(self, loc):
