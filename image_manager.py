@@ -3,6 +3,7 @@ import logging
 import os
 
 import config
+from db import Db
 from imagelist import Imagelist
 from gps_db import GpsDb
 from image_db import ImageDb
@@ -17,8 +18,10 @@ log = logging.getLogger(config.logname)
 class ImageManager(object):
     def __init__(self, path=None):
         self.media = None
-        self.imagedb = ImageDb(config.get("image_db"))
-        self.gpsdb = GpsDb(config.get("gps_db"))
+
+        self.db = Db()
+        self.imagedb = ImageDb(self.db)
+        self.gpsdb = GpsDb(self.db)
         self.reset = False
 
         if path:

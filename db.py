@@ -7,7 +7,10 @@ log = logging.getLogger(config.logname)
         # http://bytefish.de/blog/first_steps_with_sqlalchemy/
         # http://docs.sqlalchemy.org/en/latest/orm/tutorial.html#querying
 
+from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
 Base = declarative_base()
 
 class Db(object):
@@ -17,6 +20,3 @@ class Db(object):
         Session = sessionmaker(bind=engine)
         self.session = Session()
 
-db = Db()
-
-print "done"

@@ -3,17 +3,16 @@ import sqlite3
 
 import config
 from media import Media
-from _sqlite3 import Row
 
 log = logging.getLogger(config.logname)
 
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 from sqlalchemy import *
-from db import Base
-
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
+
+from db import Base
 
 class Image(Base):
     __tablename__ = "image"
@@ -37,15 +36,15 @@ class ImageDb(object):
         created : creation time of file
         loc : gps location string : "123.xxx,-23.xxx". latitude and longitude
     """
-    table = "image"
+    #table = "image"
     
     def __init__(self, db):
         self.db = db
         self.session = db.session
         
     def reset(self):
-        self.execute("DELETE FROM %s" % self.table)
-        self.execute("vacuum");
+        self.session.query(Image).delete()
+        self.session.commit()
 
     def put(self, name, path, created, loc):
         created_time = created
@@ -119,8 +118,12 @@ if __name__ == "__main__":
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
     import image_info
+    from db import Db
 
-    imagedb = ImageDb("image.sqlite")
+    image_info = image_info.ImageInfo()
+
+    db = Db()
+    imagedb = ImageDb(db)
     m = Media("media", "image")
     media_list = m.scan()
     for value in media_list.values():

@@ -9,8 +9,7 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, Index
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
 
-from db import Db
-from _sqlite3 import Row
+from db import Base
 
 log = logging.getLogger(config.logname)
 
@@ -37,14 +36,13 @@ class GpsDb():
         self.session = db.session
     
     def get(self, loc):
-        self.execute("SELECT * FROM %s WHERE loc=?" % self.table, (loc,))
-        row = self.cursor.fetchone()
+        row = self.session.query(Gps).filter(Gps.loc == loc).first()
         if not row:
             log.debug("key=%s not found", loc)
             return None
 
         log.debug("found.  %s", row)        
-        return row["address"]
+        return row.address
     
     def put(self, loc, address):
         gps = Gps(loc=loc, address=address)
