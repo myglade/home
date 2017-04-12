@@ -19,6 +19,11 @@ pip install flask
 pip install SQLAlchemy
 
 
+pip install PyMySQL
+https://github.com/PyMySQL/PyMySQL
+
+mysql connector for sqlalchemy
+http://docs.sqlalchemy.org/en/latest/dialects/mysql.html#module-sqlalchemy.dialects.mysql.mysqldb
 
 Client Functions
 1. display all video / audio files as list

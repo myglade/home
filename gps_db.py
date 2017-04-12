@@ -21,7 +21,7 @@ class Gps(Base):
     __table_args__ = (Index('loc_index', "loc"), )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    loc = Column(String(128))
+    loc = Column(String(128), unique=True)
     address = Column(String(512))
 
     def __repr__(self):

@@ -1,6 +1,6 @@
 import config
 import logging
-import sqlite3
+
 
 log = logging.getLogger(config.logname)
 
@@ -13,9 +13,20 @@ from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
+'''
+dialect+driver://username:password@host:port/database
+
+
+'''
+
+MYSQL_URL="mysql+pymysql://root:root@127.0.0.1/home"
+
 class Db(object):
-    def __init__(self):
-        engine = create_engine('sqlite:///:memory:', echo=True)
+    def __init__(self, db_url=None):
+        if not db_url:
+            db_url = MYSQL_URL
+
+        engine = create_engine(db_url, echo=True)
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()

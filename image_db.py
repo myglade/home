@@ -4,8 +4,7 @@ import sqlite3
 import config
 from media import Media
 
-log = logging.getLogger(config.logname)
-
+from pymysql.err import *
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 from sqlalchemy import *
@@ -14,13 +13,21 @@ from sqlalchemy.orm import sessionmaker
 
 from db import Base
 
+log = logging.getLogger(config.logname)
+
+
 class Image(Base):
     __tablename__ = "image"
     __table_args__ = (Index('created_index', "created"), )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(128), nullable=False)
-    path = Column(String(512), nullable=False)
+    '''
+    If anyone is having issues with INNODB / Utf-8 trying to put 
+    an UNIQUE index on a VARCHAR(256) field, switch it to VARCHAR(255). 
+    It seems 255 is the limitation.
+    '''
+    path = Column(String(255), unique=True, nullable=False)
     created = Column(DateTime, nullable=False)
     loc = Column(String(128))
 
@@ -50,14 +57,17 @@ class ImageDb(object):
         created_time = created
         # datetime(2017, 12, 5)
         image = Image(name=name, path=path, created=created_time, loc=loc)
-        self.session.add(image)
-        self.session.commit()
+        try:
+            self.session.add(image)
+            self.session.commit()
+        except Exception as e:
+            log.info(e)
 
     def get_next_by_time(self, id):
         """ by time """
         
-        count = self.session.query(Image).filter(Image.id == id).count()
-        if not count:
+        image = self.session.query(Image).filter(Image.id == id).first()
+        if not image:
             image = self.session.query(Image).order_by(Image.created).first()
             return image
 
@@ -136,9 +146,9 @@ if __name__ == "__main__":
 
     id = -1
     for i in xrange(20):
-        r = imagedb.get_next_by_time(id)
-        print r
-        id = r["id"]
+        image = imagedb.get_next_by_time(id)
+        print "+++++++++++++++++++++++++++++", image
+        id = image.id
 
 '''
 {'loc': u'37.350078,-121.981169', 
