@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 from sqlalchemy import *
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, class_mapper, ColumnProperty
 
 from db import Base
 
@@ -35,6 +35,13 @@ class Image(Base):
         created = self.created.strftime("%Y-%m-%d %H:%M:%S")
         return "<Image (id=%d, name='%s', path='%s', created='%s', loc='%s')>" % \
                 (self.id, self.name, self.path, created, self.loc)
+
+    def as_dict(self):                                                                                                                                                                               
+        result = {}                                                                                                                                                                                  
+        for prop in class_mapper(self.__class__).iterate_properties:                                                                                                                                 
+            if isinstance(prop, ColumnProperty):                                                                                                                                                     
+                result[prop.key] = getattr(self, prop.key)                                                                                                                                           
+        return result
 
 class ImageDb(object):
     """
@@ -62,6 +69,7 @@ class ImageDb(object):
             self.session.commit()
         except Exception as e:
             log.info(e)
+            self.session.rollback()
 
     def get_next_by_time(self, id):
         """ by time """
@@ -69,7 +77,7 @@ class ImageDb(object):
         image = self.session.query(Image).filter(Image.id == id).first()
         if not image:
             image = self.session.query(Image).order_by(Image.created).first()
-            return image
+            return image.as_dict()
 
         created = image.created
         image = self.session.query(Image).\
@@ -77,19 +85,19 @@ class ImageDb(object):
                 order_by(Image.id).first()
 
         if image:
-            return image
+            return image.as_dict()
 
         image = self.session.query(Image).\
                 filter(Image.created > created).\
                 order_by(Image.created, Image.id).first()
 
         if image:
-            return image
+            return image.as_dict()
 
         image = self.session.query(Image).\
                 order_by(Image.created, Image.id).first()
 
-        return image
+        return image.as_dict()
 """
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))
         row = self.cursor.fetchone()

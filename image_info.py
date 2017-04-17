@@ -109,7 +109,12 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    imageinfo = ImageInfo()
-    print imageinfo.get("y:\\Pictures\\2015-2\\IMG_1179.png")
+    import gps_db
+    import db
 
+    gps = gps_db.GpsDb(db.Db())
+    imageinfo = ImageInfo()
+    _, loc = imageinfo.get("y:\\Pictures\\2015-2\\IMG_1047.jpg")
+    addr = gps.get_location(loc)
+    print addr
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")

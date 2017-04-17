@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 from sqlalchemy import Table, Column, Integer, String, DateTime, Index
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, class_mapper, ColumnProperty
 
 from db import Base
 
@@ -27,6 +27,12 @@ class Gps(Base):
     def __repr__(self):
         return "<Gps (id=%d, loc='%s', address='%s')>" % \
                 (self.id, self.loc, self.address)
+    def as_dict(self):                                                                                                                                                                               
+            result = {}                                                                                                                                                                                  
+            for prop in class_mapper(self.__class__).iterate_properties:                                                                                                                                 
+                if isinstance(prop, ColumnProperty):                                                                                                                                                     
+                    result[prop.key] = getattr(self, prop.key)                                                                                                                                           
+            return result
 
 class GpsDb():
     table = 'gps'
@@ -46,8 +52,12 @@ class GpsDb():
     
     def put(self, loc, address):
         gps = Gps(loc=loc, address=address)
-        self.session.add(gps)
-        self.session.commit()
+        try:
+            self.session.add(gps)
+            self.session.commit()
+        except Exception as e:
+            log.info(e)
+            self.session.rollback()
 
         log.debug("save %s, %s", loc, address)
         
@@ -57,6 +67,9 @@ class GpsDb():
         address (string): result address
         
         """
+        if not loc:
+            return "Not Found"
+
         log.debug("geo loc : %s", loc)
         address = self.get(loc)
         if address:
@@ -77,7 +90,6 @@ class GpsDb():
             log.debug("In accessing api, exception.  \n%s", e)
 
         log.info("api fails to get geo information")
+ 
         return "Not Found"
-        
-        return address
     

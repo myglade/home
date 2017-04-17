@@ -45,16 +45,7 @@ def next_image():
 
     log.debug("oid=%s, id=%s", id, img['id'])
 
-    # date transformation
-    try:
-        d = img['created'][:10]
-        year = int(d[:4])
-        mon = int(d[5:7])
-        day = int(d[8:10])
-
-        created_time = "%s / %s / %s" % (year, mon, day)
-    except Exception as e:
-        log.error("id=%s e=%s", img['id'], e)
+    created_time = img['created']
 
     # address transformation
     addr = img['address']

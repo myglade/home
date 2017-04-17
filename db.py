@@ -26,7 +26,7 @@ class Db(object):
         if not db_url:
             db_url = MYSQL_URL
 
-        engine = create_engine(db_url, echo=True)
+        engine = create_engine(db_url, echo=False)
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()

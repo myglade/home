@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{56e79734-c2b1-4cac-b30b-19ff23bf601c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>image_db.py</StartupFile>
+    <StartupFile>web.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
