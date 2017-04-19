@@ -21,8 +21,15 @@ import config
 
 log = logging.getLogger(config.logname)
 
+# modify image
+MODIFY_DATE=1
+MODIFY_ROTATE=2
+NON_JPG=4
+
 class ImageInfo(object):
     def __init__(self, *args, **kwargs):
+        self.prev_date = '2008.01.01  00:00:0'
+
         return super(ImageInfo, self).__init__(*args, **kwargs)
 
     def get(self, name):
@@ -33,17 +40,29 @@ class ImageInfo(object):
         if ext not in [".tiff", ".jpg"]:
             raise Exception("Invalid extension. %s" % name)
 
+        flag = 0
         try:
             self.rotate_jpeg(name)
         except Exception as e:
             log.error("Fail to adjust rotation %s. e-%s", name, e)
             raise e
 
+        if self.is_rotate:
+            flag += MODIFY_ROTATE
+
         exif_dict = piexif.load(name)
     
         if piexif.ExifIFD.DateTimeOriginal in exif_dict['Exif']:
             date = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal]
-    
+        elif piexif.ExifIFD.DateTimeDigitized in exif_dict['Exif']:
+            date = exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized]
+        else:
+            log.warn("%s doesn't have date. infer from previous")
+            date = self.prev_date
+            flag += MODIFY_DATE
+
+        self.prev_date = date
+
         gps = exif_dict['GPS']
         if gps:
             log.debug("piexif loc= %s %s, %s, %s", 
@@ -57,7 +76,7 @@ class ImageInfo(object):
     
             loc = str(latitude) + "," + str(longitude)
    
-        return (date, loc)
+        return (date, loc, flag)
 
     def gps_to_num(self, part):
         return float(part[0]) / float(part[1])
@@ -76,6 +95,8 @@ class ImageInfo(object):
 
     def rotate_jpeg(self, filename):
         img = Image.open(filename)
+        self.is_rotate = False
+
         if "exif" in img.info:
             exif_dict = piexif.load(img.info["exif"])
 
@@ -103,6 +124,8 @@ class ImageInfo(object):
 
                 img.save(filename, exif=exif_bytes)
 
+                self.is_rotate = True
+
 image_info = ImageInfo()
 
 if __name__ == "__main__":
@@ -114,7 +137,7 @@ if __name__ == "__main__":
 
     gps = gps_db.GpsDb(db.Db())
     imageinfo = ImageInfo()
-    _, loc = imageinfo.get("y:\\Pictures\\2015-2\\IMG_1047.jpg")
+    _, loc, flag = imageinfo.get("y:\\Pictures\\2011-1\\SNC11083.jpg")
     addr = gps.get_location(loc)
     print addr
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")

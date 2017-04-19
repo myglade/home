@@ -30,11 +30,12 @@ class Image(Base):
     path = Column(String(255), unique=True, nullable=False)
     created = Column(DateTime, nullable=False)
     loc = Column(String(128))
+    flag = Column(Integer, default=0)
 
     def __repr__(self):
         created = self.created.strftime("%Y-%m-%d %H:%M:%S")
-        return "<Image (id=%d, name='%s', path='%s', created='%s', loc='%s')>" % \
-                (self.id, self.name, self.path, created, self.loc)
+        return "<Image (id=%d, name='%s', path='%s', created='%s', loc='%s', flag=%d)>" % \
+                (self.id, self.name, self.path, created, self.loc, self.flag)
 
     def as_dict(self):                                                                                                                                                                               
         result = {}                                                                                                                                                                                  
@@ -60,10 +61,10 @@ class ImageDb(object):
         self.session.query(Image).delete()
         self.session.commit()
 
-    def put(self, name, path, created, loc):
+    def put(self, name, path, created, loc, flag):
         created_time = created
         # datetime(2017, 12, 5)
-        image = Image(name=name, path=path, created=created_time, loc=loc)
+        image = Image(name=name, path=path, created=created_time, loc=loc, flag=flag)
         try:
             self.session.add(image)
             self.session.commit()

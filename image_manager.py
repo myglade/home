@@ -65,15 +65,17 @@ class ImageManager(object):
             log.debug('scan %s', path)
 
             date = None
+            modify_flag = 0
             try:
-                date, loc = image_info.image_info.get(path)
+                date, loc, modify_flag = image_info.image_info.get(path)
             except Exception as e:
                 loc = ""
 
             if not date:
                 date = str(datetime.datetime.fromtimestamp(os.path.getmtime(path)))
-
-            self.imagedb.put(name, rel_path, date, loc)
+                modify_flag = image_info.NON_JPG
+                
+            self.imagedb.put(name, rel_path, date, loc, modify_flag)
 
         if not self.path:
             log.error("path is not set")
