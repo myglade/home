@@ -22,14 +22,12 @@ import config
 log = logging.getLogger(config.logname)
 
 # modify image
-MODIFY_DATE=1
-MODIFY_ROTATE=2
+MODIFY_ROTATE=1
+MODIFY_ROTATE_FAIL=2
 NON_JPG=4
 
 class ImageInfo(object):
     def __init__(self, *args, **kwargs):
-        self.prev_date = '2008.01.01  00:00:0'
-
         return super(ImageInfo, self).__init__(*args, **kwargs)
 
     def get(self, name):
@@ -41,27 +39,12 @@ class ImageInfo(object):
             raise Exception("Invalid extension. %s" % name)
 
         flag = 0
-        try:
-            self.rotate_jpeg(name)
-        except Exception as e:
-            log.error("Fail to adjust rotation %s. e-%s", name, e)
-            raise e
-
-        if self.is_rotate:
-            flag += MODIFY_ROTATE
-
         exif_dict = piexif.load(name)
     
         if piexif.ExifIFD.DateTimeOriginal in exif_dict['Exif']:
             date = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal]
         elif piexif.ExifIFD.DateTimeDigitized in exif_dict['Exif']:
             date = exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized]
-        else:
-            log.warn("%s doesn't have date. infer from previous")
-            date = self.prev_date
-            flag += MODIFY_DATE
-
-        self.prev_date = date
 
         gps = exif_dict['GPS']
         if gps:
@@ -75,7 +58,15 @@ class ImageInfo(object):
             longitude = self.get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
     
             loc = str(latitude) + "," + str(longitude)
-   
+ 
+        try:
+            self.rotate_jpeg(name)
+            if self.is_rotate:
+                flag += MODIFY_ROTATE
+        except Exception as e:
+            log.error("Fail to adjust rotation %s. e-%s", name, e)
+            flag += MODIFY_ROTATE_FAIL
+
         return (date, loc, flag)
 
     def gps_to_num(self, part):

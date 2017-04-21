@@ -65,15 +65,28 @@ class ImageManager(object):
             log.debug('scan %s', path)
 
             date = None
+            loc = None
             modify_flag = 0
+
+            stinfo = os.stat(path)
+            origin_mtime = stinfo.st_mtime
+            origin_atime = stinfo.st_atime
+
             try:
                 date, loc, modify_flag = image_info.image_info.get(path)
             except Exception as e:
-                loc = ""
+                log.warn("%s", e)
+                modify_flag += image_info.NON_JPG
 
-            if not date:
-                date = str(datetime.datetime.fromtimestamp(os.path.getmtime(path)))
-                modify_flag = image_info.NON_JPG
+            stinfo = os.stat(path)
+            if stinfo.st_mtime != origin_mtime:
+                os.utime(path, (origin_atime, origin_mtime))
+
+            
+            # use modified data instead of taken date in exif 
+            # exif date has many errors
+            #if not date:
+            date = str(datetime.datetime.fromtimestamp(origin_mtime))
                 
             self.imagedb.put(name, rel_path, date, loc, modify_flag)
 
