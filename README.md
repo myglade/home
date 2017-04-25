@@ -25,6 +25,13 @@ https://github.com/PyMySQL/PyMySQL
 mysql connector for sqlalchemy
 http://docs.sqlalchemy.org/en/latest/dialects/mysql.html#module-sqlalchemy.dialects.mysql.mysqldb
 
+Use oracle mysql connector.
+PyMySQL has bugs. It crashes.
+
+mysql-connector-python-2.1.6-py2.7-winx64.msi
+
+USE ORACLE.
+
 Client Functions
 1. display all video / audio files as list
 2. Control play / stop / next / prev etc

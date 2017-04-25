@@ -82,7 +82,9 @@ class ImageInfo(object):
     
         v = float(flip) * (degrees + minutes / 60.0 + seconds / 3600.0)
 
-        return decimal.Decimal('%.6f' % v)
+        # doesn't need exact precision for gps.  3 floating point is enough
+        return decimal.Decimal('%.3f' % v)
+        #return decimal.Decimal('%.6f' % v)
 
     def rotate_jpeg(self, filename):
         img = Image.open(filename)
@@ -128,7 +130,7 @@ if __name__ == "__main__":
 
     gps = gps_db.GpsDb(db.Db())
     imageinfo = ImageInfo()
-    _, loc, flag = imageinfo.get("y:\\Pictures\\2011-1\\SNC11083.jpg")
+    _, loc, flag = imageinfo.get("y:\\Pictures\\2016-1\\IMG_2049.jpg")
     addr = gps.get_location(loc)
     print addr
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")

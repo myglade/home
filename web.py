@@ -53,7 +53,7 @@ def next_image():
     if addr != "Not Found":
         t = addr.split(',')
         if len(addr) > 2:
-            addr_desc = "%s,%s" % (t[1], t[2][:4])
+            addr_desc = "%s,%s" % (t[1], t[2])
         else:
             addr_desc = addr
 
