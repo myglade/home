@@ -39,25 +39,32 @@ class GpsDb():
 
     def __init__(self, db):
         self.db = db
-        self.session = db.session
     
     def get(self, loc):
-        row = self.session.query(Gps).filter(Gps.loc == loc).first()
-        if not row:
-            log.debug("key=%s not found", loc)
-            return None
+        session = self.db.Session()
+        try:
+            row = session.query(Gps).filter(Gps.loc == loc).first()
+            if not row:
+                log.debug("key=%s not found", loc)
+                return None
+        finally:
+            self.db.Session.remove()
 
         log.debug("found.  %s", row)        
         return row.address
     
     def put(self, loc, address):
+        session = self.db.Session()
+
         gps = Gps(loc=loc, address=address)
         try:
-            self.session.add(gps)
-            self.session.commit()
+            session.add(gps)
+            session.commit()
         except Exception as e:
             log.info(e)
-            self.session.rollback()
+            session.rollback()
+        finally:
+            self.db.Session.remove()
 
         log.debug("save %s, %s", loc, address)
         

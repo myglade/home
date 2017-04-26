@@ -56,63 +56,70 @@ class ImageDb(object):
     def __init__(self, db):
         self.db = db
         
-    @property
-    def session(self):
-        return self.db.session
-
     def reset(self):
-        self.session.query(Image).delete()
-        self.session.commit()
+        try:
+            session = self.db.Session()
+            session.query(Image).delete()
+            session.commit()
+        finally:
+            self.db.Session.remove()
 
     def put(self, name, path, created, loc, flag):
         created_time = created
         # datetime(2017, 12, 5)
         image = Image(name=name, path=path, created=created_time, loc=loc, flag=flag)
+
+        session = self.db.Session()
         try:
-            self.session.add(image)
-            self.session.commit()
+            session.add(image)
+            session.commit()
         except Exception as e:
             log.info(e)
-            self.session.rollback()
+            session.rollback()
+        finally:
+            self.db.Session.remove()
 
     def get_next_by_time(self, id):
         retry = 0
 
         while True:
+            session = self.db.Session()
             try:
                 """ by time """
-                image = self.session.query(Image).filter(Image.id == id).first()
+                image = session.query(Image).filter(Image.id == id).first()
                 if not image:
-                    image = self.session.query(Image).order_by(Image.created).first()
+                    image = session.query(Image).order_by(Image.created).first()
                     return image.as_dict()
 
                 created = image.created
-                image = self.session.query(Image).\
+                image = session.query(Image).\
                         filter(and_(Image.id > id, Image.created == created)).\
                         order_by(Image.id).first()
 
                 if image:
                     return image.as_dict()
 
-                image = self.session.query(Image).\
+                image = session.query(Image).\
                         filter(Image.created > created).\
                         order_by(Image.created, Image.id).first()
 
                 if image:
                     return image.as_dict()
 
-                image = self.session.query(Image).\
+                image = session.query(Image).\
                         order_by(Image.created, Image.id).first()
 
                 return image.as_dict()
             except Exception as e:
                 log.error("get_next_by_time Error.  %s", e)
-                self.db.reset_session()
+                session.rollback()
+#                self.db.reset_session()
                 retry += 1
                 if retry > 3:
                     log.error("db operation failure. quit")
                     sys.exit(0)
-
+            finally:
+                self.db.Session.remove()
 
 """
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))

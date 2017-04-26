@@ -30,12 +30,9 @@ class Db(object):
         if not db_url:
             db_url = MYSQL_URL
 
-        engine = create_engine(db_url, echo=False)
+        engine = create_engine(db_url, echo=False, pool_recycle=3600, pool_size=100)
         Base.metadata.create_all(engine)
         session_factory = sessionmaker(bind=engine, expire_on_commit=False)
         self.Session = scoped_session(session_factory)
-        self.session = self.Session()
+#        self.session = self.Session()
 
-    def reset_session(self):
-        self.session.close()
-        self.session = self.Session()
