@@ -1,6 +1,9 @@
 import datetime
 import logging
 import os
+import time
+
+from sqlalchemy.exc import InterfaceError
 
 import config
 from db import Db
@@ -19,7 +22,18 @@ class ImageManager(object):
     def __init__(self, path=None):
         self.media = None
 
-        self.db = Db()
+        retry = 0
+        while True:
+            try:
+                self.db = Db()
+            except InterfaceError as e:
+                print "[%d] Retry.  %s" % (retry, e)
+                time.sleep(5)
+
+                retry += 1
+                if retry > 100:
+                    raise e
+
         self.imagedb = ImageDb(self.db)
         self.gpsdb = GpsDb(self.db)
         self.reset = False
