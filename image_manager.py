@@ -26,6 +26,7 @@ class ImageManager(object):
         while True:
             try:
                 self.db = Db()
+                break
             except InterfaceError as e:
                 print "[%d] Retry.  %s" % (retry, e)
                 time.sleep(5)
