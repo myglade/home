@@ -17,8 +17,11 @@ class Image(object):
 
 class Imagelist(object):
     """description of class"""
-    def __init__(self, seed_path):
+    def __init__(self, seed_path, scan_path):
         self.seed_path = seed_path
+        paths = scan_path.split(";")
+        self.scan_path = list(set(paths))
+
         self.ext = ['jpg', 'gif', 'png', 'tiff']
         
         if not self.seed_path.endswith(os.path.sep):
@@ -56,18 +59,21 @@ class Imagelist(object):
         log.info("start scan")
 
         self.imagelist = [] 
-        for root, dirs, files in os.walk(unicode(self.seed_path)):
-            for file in files:
-                filename, ext = os.path.splitext(file)
-                ext = ext[1:]
-                if ext not in self.ext:
-                    continue
+        for spath in self.scan_path:
+            if not spath:
+                continue
+            for root, dirs, files in os.walk(unicode(spath)):
+                for file in files:
+                    filename, ext = os.path.splitext(file)
+                    ext = ext[1:]
+                    if ext.lower() not in self.ext:
+                        continue
 
-                path = os.path.join(root, file)
-                l = len(unicode(self.seed_path))
-                rel_path = os.path.join(root[l:], file)
-                callback(file, rel_path, path, ext)
-                #self.imagelist.append(Image(file, rel_path))
+                    path = os.path.join(root, file)
+                    l = len(unicode(self.seed_path))
+                    rel_path = os.path.join(root[l:], file)
+                    callback(file, rel_path, path, ext)
+                    #self.imagelist.append(Image(file, rel_path))
 
         log.info("finish scan")
         if self.cron_callback:

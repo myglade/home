@@ -13,6 +13,7 @@ conf_data = {
     "image_db": "image.sqlite",
     "gps_db": "gps_db",
     "image_path": "y:\\Pictures",
+    "image_scan_path": "y:\\Pictures",
     "web_media_path": "media",
     "slide_delay": 10000,
     "fade_delay": 50,

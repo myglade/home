@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import *
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker, class_mapper, ColumnProperty
+import time
 
 from db import Base
 
@@ -33,9 +34,8 @@ class Image(Base):
     flag = Column(Integer, default=0)
 
     def __repr__(self):
-        created = self.created.strftime("%Y-%m-%d %H:%M:%S")
-        return "<Image (id=%d, name='%s', path='%s', created='%s', loc='%s', flag=%d)>" % \
-                (self.id, self.name, self.path, created, self.loc, self.flag)
+        return "<Image (id=%s, name='%s', path='%s', created='%s', loc='%s', flag=%s)>" % \
+                (self.id, self.name, self.path, self.created, self.loc, self.flag)
 
     def as_dict(self):                                                                                                                                                                               
         result = {}                                                                                                                                                                                  
@@ -73,6 +73,7 @@ class ImageDb(object):
         try:
             session.add(image)
             session.commit()
+            log.info("image is added. %s", image)
         except Exception as e:
             log.info(e)
             session.rollback()

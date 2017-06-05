@@ -96,7 +96,6 @@ class ImageManager(object):
             stinfo = os.stat(path)
             if stinfo.st_mtime != origin_mtime:
                 os.utime(path, (origin_atime, origin_mtime))
-
             
             # use modified data instead of taken date in exif 
             # exif date has many errors
@@ -112,8 +111,9 @@ class ImageManager(object):
         if reset:
             self.imagedb.reset()
 
+        scan_path = config.get("image_scan_path")
         self.stop()
-        imagelist = Imagelist(self.path)
+        imagelist = Imagelist(self.path, scan_path)
         images = imagelist.scan(image_add)
 
         if restart_cron:
@@ -150,7 +150,7 @@ def get_newimage(id):
 
 def process(type):
     if type == "build":
-        return image_mgr.build_imagedb(True)
+        return image_mgr.build_imagedb(False)
     elif type == 'update':
         return image_mgr.build_imagedb(False)
     elif type == 'reset':

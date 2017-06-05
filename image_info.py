@@ -35,7 +35,7 @@ class ImageInfo(object):
         loc = None
     
         _, ext = os.path.splitext(name)
-        if ext not in [".tiff", ".jpg"]:
+        if ext.lower() not in [".tiff", ".jpg"]:
             raise Exception("Invalid extension. %s" % name)
 
         flag = 0

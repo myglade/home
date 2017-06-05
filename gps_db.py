@@ -25,7 +25,7 @@ class Gps(Base):
     address = Column(String(512))
 
     def __repr__(self):
-        return "<Gps (id=%d, loc='%s', address='%s')>" % \
+        return "<Gps (id=%s, loc='%s', address='%s')>" % \
                 (self.id, self.loc, self.address)
     def as_dict(self):                                                                                                                                                                               
             result = {}                                                                                                                                                                                  
