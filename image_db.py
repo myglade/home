@@ -30,12 +30,14 @@ class Image(Base):
     '''
     path = Column(String(255), unique=True, nullable=False)
     created = Column(DateTime, nullable=False)
+    media_type = Column(String(64))
+    ext = Column(String(64))
     loc = Column(String(128))
     flag = Column(Integer, default=0)
 
     def __repr__(self):
-        return "<Image (id=%s, name='%s', path='%s', created='%s', loc='%s', flag=%s)>" % \
-                (self.id, self.name, self.path, self.created, self.loc, self.flag)
+        return "<Image (id=%s, name='%s', path='%s', created='%s', media_type='%s', ext='%s', loc='%s', flag=%s)>" % \
+                (self.id, self.name, self.path, self.created, self.media_type, self.ext, self.loc, self.flag)
 
     def as_dict(self):                                                                                                                                                                               
         result = {}                                                                                                                                                                                  
@@ -64,10 +66,11 @@ class ImageDb(object):
         finally:
             self.db.Session.remove()
 
-    def put(self, name, path, created, loc, flag):
+    def put(self, name, path, created, media_type, ext, loc, flag):
         created_time = created
         # datetime(2017, 12, 5)
-        image = Image(name=name, path=path, created=created_time, loc=loc, flag=flag)
+        image = Image(name=name, path=path, created=created_time, 
+                      media_type=media_type, ext=ext, loc=loc, flag=flag)
 
         session = self.db.Session()
         try:

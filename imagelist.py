@@ -10,6 +10,10 @@ import config
 
 log = logging.getLogger(config.logname)
 
+
+MEDIA_IMG = 'img'
+MEDIA_VIDEO = 'video'
+
 class Image(object):
     def __init__(self, name, rel_path):
         self.name = name 
@@ -22,8 +26,10 @@ class Imagelist(object):
         paths = scan_path.split(";")
         self.scan_path = list(set(paths))
 
-        self.ext = ['jpg', 'gif', 'png', 'tiff']
-        
+        self.ext = ['jpg', 'gif', 'png', 'tiff', 'mp4', 'm4v', 'mov']
+        self.image_type = ['jpg', 'gif', 'png', 'tiff']
+
+        # otherwise, type is 'video'.  
         if not self.seed_path.endswith(os.path.sep):
             self.seed_path += os.path.sep
 
@@ -65,14 +71,19 @@ class Imagelist(object):
             for root, dirs, files in os.walk(unicode(spath)):
                 for file in files:
                     filename, ext = os.path.splitext(file)
-                    ext = ext[1:]
-                    if ext.lower() not in self.ext:
+                    ext = ext[1:].lower()
+                    if ext not in self.ext:
                         continue
+
+                    if ext in self.image_type:
+                        media_type = MEDIA_IMG
+                    else:
+                        media_type = MEDIA_VIDEO
 
                     path = os.path.join(root, file)
                     l = len(unicode(self.seed_path))
                     rel_path = os.path.join(root[l:], file)
-                    callback(file, rel_path, path, ext)
+                    callback(file, rel_path, path, ext, media_type)
                     #self.imagelist.append(Image(file, rel_path))
 
         log.info("finish scan")

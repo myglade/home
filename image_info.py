@@ -36,7 +36,7 @@ class ImageInfo(object):
     
         _, ext = os.path.splitext(name)
         if ext.lower() not in [".tiff", ".jpg"]:
-            raise Exception("Invalid extension. %s" % name)
+            raise Exception("Not image file. %s" % name)
 
         flag = 0
         exif_dict = piexif.load(name)

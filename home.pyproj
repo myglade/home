@@ -30,6 +30,7 @@
     <Content Include="static\index.html" />
     <Content Include="README.md" />
     <Content Include="static\slideShow.js" />
+    <Content Include="static\test.html" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="config.py">

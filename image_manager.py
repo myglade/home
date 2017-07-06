@@ -76,7 +76,7 @@ class ImageManager(object):
             self.update_imagedb(image, prop)
 
     def build_imagedb(self, reset, restart_cron=False):
-        def image_add(name, rel_path, path, ext):
+        def image_add(name, rel_path, path, ext, media_type):
             log.debug('scan %s', path)
 
             date = None
@@ -91,7 +91,6 @@ class ImageManager(object):
                 date, loc, modify_flag = image_info.image_info.get(path)
             except Exception as e:
                 log.warn("%s", e)
-                modify_flag += image_info.NON_JPG
 
             stinfo = os.stat(path)
             if stinfo.st_mtime != origin_mtime:
@@ -102,7 +101,7 @@ class ImageManager(object):
             #if not date:
             date = str(datetime.datetime.fromtimestamp(origin_mtime))
                 
-            self.imagedb.put(name, rel_path, date, loc, modify_flag)
+            self.imagedb.put(name, rel_path, date, media_type, ext, loc, modify_flag)
 
         if not self.path:
             log.error("path is not set")

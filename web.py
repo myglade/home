@@ -29,7 +29,6 @@ log = logging.getLogger(config.logname)
 def hello():
     return render_template('index.html', rand=random.randint(1, 10000000))
 
-
 @app.route('/media/<path:path>')
 def media_file(path):
     #dir = os.path.join(config.image_path, path)

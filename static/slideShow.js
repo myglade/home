@@ -36,7 +36,7 @@ function createCookie(name, value, days) {
 function readCookie(name, def) {
     var nameEQ = name + "=";
     var ca = document.cookie.split(';');
-    console.log("+++++++++++++[" + ca);
+
     for (var i = 0; i < ca.length; i++) {
         var c = ca[i];
         while (c.charAt(0) == ' ')
@@ -74,7 +74,7 @@ function slideShow() {
         wrapperID: "slideShowImages", // The ID of the <div> element that contains all of the <img> elements to be shown as a slide show.
         wrapperObject: null, // Will contain a reference to the <div> element that contains all of the <img> elements to be shown as a slide show.
 
-        slideShowID: null, // A setInterval() ID value used to stop the slide show.
+        slideShowID: -1, // A setInterval() ID value used to stop the slide show.
         slideShowRunning: true, // Used to record when the slide show is running and when it's not. The slide show is always initially running.    
 
         imageObjects: [],
@@ -121,6 +121,7 @@ function slideShow() {
         div.style.height = images.height + "px";
         div.style.top = 0 + "px";
         div.style.left = 0 + "px";
+        div.media_type = "img";
 
         var desc = div.querySelectorAll('span')[0];
         images.imageDescObjects.push(desc);
@@ -133,6 +134,7 @@ function slideShow() {
  //   console.log(images.descObject);
     console.log("READ COOKIE");
     var id = readCookie(IMAGE_ID, -1);
+    id = -1;
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay)
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay)
     var url = "http://{0}/{1}".format(window.location.host, images.url);
@@ -150,7 +152,8 @@ function slideShow() {
       "id": 6,
       "loc": null,
       "name": "6.jpg",
-      "path": "media/6.jpg"
+      "path": "media/6.jpg",
+      "type": "img" or "video"
     }
     */
 
@@ -165,18 +168,45 @@ function slideShow() {
         xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                obj = JSON.parse(xmlhttp.responseText);
-
-                console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
-                var image = new Image();
-                image.obj = obj;
-                image.onload = function () {
-                    images.queue.push(image);
+                function finish_load() {
+                    images.queue.push(media);
                     console.log("4. id={0} queue size={1}".format(obj['id'], queue.length));
                     fillImages(url, obj['id'], queue, maxQueueSize);
                 }
-                image.src = "http://{0}/{1}".format(window.location.host, obj["path"])
-                console.log("image.src " + image.src);
+
+                obj = JSON.parse(xmlhttp.responseText);
+
+                console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+
+                if (obj["media_type"] == 'img') {
+                    media = new Image();
+                    media.type = "img";
+                    console.log("load img");
+                    media.onload = function () {
+                        finish_load();
+                    }
+                }
+                else if (obj["media_type"] == 'video') {
+                    media = document.createElement('video');
+                    media.type = "video";
+                    console.log("load video");
+
+                    // https://www.w3schools.com/tags/av_event_canplay.asp
+                    media.oncanplay = function () {
+                        finish_load();
+                    }
+                }
+                else {
+                    alert("invalid format=" + obj["media_type"]);
+                    return;
+                }
+
+                // new Image() vs document.createElement('img')
+                // https://stackoverflow.com/questions/6241716/is-there-a-difference-between-new-image-and-document-createelementimg
+                
+                media.obj = obj;
+                media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
+                console.log("media.src " + media.src);
             }
         }
         xmlhttp.onerror = function () {
@@ -200,14 +230,36 @@ function slideShow() {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 obj = JSON.parse(xmlhttp.responseText);
 
-                //console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
-                var image = new Image();
-                image.obj = obj;
-                image.onload = function () {
-                    images.queue.push(image);
-                    //console.log("New image load");
+                console.log("{0}", obj);
+                if (obj["media_type"] == 'img') {
+                    media = new Image();
+                    media.type = "img";
+                    console.log("load img 1");
+                    media.onload = function () {
+                        images.queue.push(media);
+                    }
                 }
-                image.src = "http://{0}/{1}".format(window.location.host, obj["path"])
+                else if (obj["media_type"] == 'video') {
+                    media = document.createElement('video')
+                    media.type = "video";
+
+                    console.log("load video 1");
+                    media.oncanplay = function () {
+                        images.queue.push(media);
+                    }
+                }
+                else {
+                    alert("invalid format=" + obj["type"]);
+                    return;
+                }
+
+                //console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+                media.obj = obj;
+           //     media.onload = function () {
+           //         images.queue.push(media);
+                    //console.log("New image load");
+           //     }
+                media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
             }
         }
         xmlhttp.onerror = function () {
@@ -226,30 +278,62 @@ function slideShow() {
         xmlhttp.send();
         //console.log("22. query={0} id={1} queue size={2}".format(query, id, queue.length));
     }
-
+/*
     function startSlideShow() {
-        images.slideShowID = setInterval(transitionSlides, images.slideDelay);
+        //images.slideShowID = setInterval(transitionSlides, images.slideDelay);
     } // startSlideShow
+*/
 
     function failImageLoading() {
         console.log("Fail to load images");
     }
 
+    // start slide show
     function completeImagesLoading() {
         console.log("succeed to load images");
-        startSlideShow();
+        transitionSlides();
     }
 
     function adjustImage(img, winSize) {
-        console.log(winSize);
-        console.log(img.clientHeight + ":" + img.clientWidth);
+        console.log("Adjust image : %s x %s ", winSize.w, winSize.h);
+        console.log("Media size : %s x %s", img.clientWidth, img.clientHeight);
 
         if (img.clientHeight <= winSize.h && img.clientWidth <= winSize.w) {
             img.style.position = "absolute";
             img.style.left = (winSize.w - img.clientWidth) / 2 + "px";
             img.style.top = (winSize.h - img.clientHeight) / 2 + "px";
 
-            console.log("size is smaller than canvas");
+            // extend
+            ratio = winSize.w / winSize.h;
+            if (img.clientWidth / img.clientHeight > ratio) {
+                // extend width.
+                console.log("extend width");
+                width = winSize.w; 
+                height = img.clientHeight * width / img.clientWidth;
+                img.style.left = 0 + "px";
+                img.style.top = (winSize.h - height) / 2 + "px";
+
+                img.style.width = width + "px";
+                img.style.height = height + "px";
+
+                console.log("%f %f %f w=%s h=%s l=%s t=%s", height, img.clientHeight, height - img.clientHeight, img.style.width, img.style.height,
+                    img.style.left, img.style.top);
+            }
+            else {
+                console.log("extend hight");
+                // extend hight
+                height = winSize.h;
+                width = img.clientWidth * height / img.clientHeight;
+
+                img.style.left = (winSize.w - width) / 2 + "px";
+                img.style.top = 0 + "px";
+
+                img.style.width = width + "px";
+                img.style.height = height + "px";
+
+            }
+            console.log("size is smaller than canvas. ratio=%f", ratio);
+
             return;
         }
 
@@ -305,52 +389,40 @@ function slideShow() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     function transitionSlides() {
-        var nextImage = images.queue[0];
-        var nextImageElement = images.imageObjects[1 - images.curIndex];
+        console.log("start transition slide");
+        var nextMedia = images.queue[0];
+        var nextMediaContainer = images.imageObjects[1 - images.curIndex];
+        var mediaElement;
 
-        var elementImg = nextImageElement.querySelectorAll('img')[0];
-        var parent = elementImg.parentNode;
-        parent.removeChild(elementImg);
-        parent.insertBefore(nextImage, parent.childNodes[0]);
+        if (nextMediaContainer.media_type == 'img') {
+            mediaElement = nextMediaContainer.querySelectorAll('img')[0];
+        }
+        else {
+            mediaElement = nextMediaContainer.querySelectorAll('video')[0];
+        }
+
+        var parent = mediaElement.parentNode;
+        parent.removeChild(mediaElement);
+        parent.insertBefore(nextMedia, parent.childNodes[0]);
+
+        nextMediaContainer.media_type = nextMedia.type
 
         //elementImg.replaceWith(nextImage);
         // after replace, elementImg becomes invalid. refind it
-        elementImg = nextImageElement.querySelectorAll('img')[0];
-        adjustImage(elementImg, { w: images.width, h: images.height } );
+        mediaElement = nextMediaContainer.querySelectorAll(nextMediaContainer.media_type)[0];
+        adjustImage(mediaElement, { w: images.width, h: images.height } );
 
-        images.imageDescObjects[1 - images.curIndex].innerHTML = nextImage.obj["desc"]
+        images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"]
 
         // get current image
-        curImageElement = images.imageObjects[images.curIndex];
+        curMediaContainer = images.imageObjects[images.curIndex];
 
-        fadeTransition(curImageElement, nextImageElement);
+        fadeTransition(curMediaContainer, nextMediaContainer);
     } // transitionSlides
 
-    function completeTransition(curImageElement, nextImageElement) {
-        obj = images.queue[0].obj
-        createCookie(IMAGE_ID, obj["id"]);
+    function fadeTransition(curMediaContainer, nextMediaContainer) {
+        console.log("start fade transition");
 
-        if (images.slideDelay != parseInt(obj["slide_delay"])) {
-            images.slideDelay = parseInt(obj["slide_delay"]);
-            createCookie(SLIDE_DELAY, images.slideDelay);
-            clearInterval(images.slideShowID);
-            images.slideShowID = setInterval(transitionSlides, images.slideDelay);
-            console.log("slideDelay changes to " + images.slideDelay);
-        }
-        if (images.fadeDelay != parseInt(obj["fade_delay"])) {
-            images.fadeDelay = parseInt(obj["fade_delay"]);
-            createCookie(FADE_DELAY, images.fadeDelay);
-            console.log("fadeDelay changes to " + images.fadeDelay);
-        }
-
-        images.queue.shift();
-        images.curIndex = 1 - images.curIndex;
-        //console.log(nextImageElement.obj)
-        var url = "http://{0}/{1}".format(window.location.host, images.url);
-        fillOneImage(url, images.queue);
-    }
-
-    function fadeTransition(curImageElement, nextImageElement) {
         var currentSlideOpacity = 1; // Fade the current slide out.
         var nextSlideOpacity = 0; // Fade the next slide in.
         var opacityLevelIncrement = 1 / images.fadeDelay;
@@ -361,18 +433,67 @@ function slideShow() {
             nextSlideOpacity += opacityLevelIncrement;
 
             if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
-                curImageElement.style.opacity = currentSlideOpacity;
-                nextImageElement.style.opacity = nextSlideOpacity;
+                curMediaContainer.style.opacity = currentSlideOpacity;
+                nextMediaContainer.style.opacity = nextSlideOpacity;
             }
             else {
-                if (curImageElement.style)
-                    curImageElement.style.opacity = 0;
-                nextImageElement.style.opacity = 1;
+                if (curMediaContainer.style)
+                    curMediaContainer.style.opacity = 0;
+                nextMediaContainer.style.opacity = 1;
                 clearInterval(fadeActiveSlidesID);
 
-                completeTransition(curImageElement, nextImageElement);
+                completeTransition(curMediaContainer, nextMediaContainer);
             }
         } // fadeActiveSlides
+    }
+
+    function completeTransition(curMediaContainer, nextMediaContainer) {
+        console.log("complete transition");
+
+        obj = images.queue[0].obj
+        createCookie(IMAGE_ID, obj["id"]);
+
+        // if settings are changed, save them
+        if (images.slideDelay != parseInt(obj["slide_delay"])) {
+            images.slideDelay = parseInt(obj["slide_delay"]);
+            createCookie(SLIDE_DELAY, images.slideDelay);
+            console.log("slideDelay changes to " + images.slideDelay);
+        }
+        if (images.fadeDelay != parseInt(obj["fade_delay"])) {
+            images.fadeDelay = parseInt(obj["fade_delay"]);
+            createCookie(FADE_DELAY, images.fadeDelay);
+            console.log("fadeDelay changes to " + images.fadeDelay);
+        }
+
+        // clear old timer
+        if (images.slideShowID != -1) {
+            clearInterval(images.slideShowID);
+            images.slideShowID = -1;
+        }
+
+        if (nextMediaContainer.media_type == 'video') {
+            clearInterval(images.slideShowID);
+            mediaElement = nextMediaContainer.querySelectorAll('video')[0];
+            mediaElement.onended = function () {
+                console.log("video is ended.  notify");
+                transitionSlides();
+            }
+
+            console.log("start playing video");
+            mediaElement.play();
+            // start video
+        }
+        else {
+            // if pic, start new timer
+            console.log("start new timer. delay" + images.slideDelay);
+            images.slideShowID = setInterval(transitionSlides, images.slideDelay);
+        }
+
+        images.queue.shift();
+        images.curIndex = 1 - images.curIndex;
+        //console.log(nextMediaContainer.obj)
+        var url = "http://{0}/{1}".format(window.location.host, images.url);
+        fillOneImage(url, images.queue);
     }
 
 } // slideShow
