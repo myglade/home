@@ -14,8 +14,10 @@
 */
 IMAGE_ID = "image_id";
 DESC_ID = "imageDesc";
-SLIDE_DELAY = "slideDelay"
-FADE_DELAY = "fadeDelay"
+SLIDE_DELAY = "slideDelay";
+FADE_DELAY = "fadeDelay";
+VIDEO_VOLUME = "video_volume";
+MEDIA = "media";
 IMAGE1 = "slideimage0";
 IMAGE2 = "slideimage1";
 
@@ -84,7 +86,10 @@ function slideShow() {
         queue: [],
         curIndex: 1,
         maxQueueSize: 3,
-        url: "nextimage"
+        url: "nextimage",
+        dateQuery: null,
+        media: "both",
+        videoVolume: "0.5"
     }
 
     /* MAIN *************************************************************************************************/
@@ -134,9 +139,12 @@ function slideShow() {
  //   console.log(images.descObject);
     console.log("READ COOKIE");
     var id = readCookie(IMAGE_ID, -1);
-    id = -1;
-    images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay)
-    images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay)
+    id = 4;
+    images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
+    images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay);
+    images.media = readCookie(MEDIA, images.media);
+    images.videoVolume = readCookie(VIDEO_VOLUME, images.videoVolume);
+
     var url = "http://{0}/{1}".format(window.location.host, images.url);
 
     console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
@@ -270,9 +278,25 @@ function slideShow() {
             failImageLoading();
         }
 
-        id = queue[queue.length - 1].obj['id'];
+        if (images.dateQuery == null) {
+            id = queue[queue.length - 1].obj['id'];
 
-        query = "{0}?id={1}".format(url, id);
+            if (images.media == "both") {
+                query = "{0}?id={1}".format(url, id);
+            }
+            else {
+                query = "{0}?id={1}&media={2}".format(url, id, images.media);
+            }
+        }
+        else {
+            if (images.media == "both") {
+                query = "{0}?date={1}".format(url, images.dateQuery);
+            }
+            else {
+                query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
+            }
+            images.dateQuery = null;
+        }
         xmlhttp.open("GET", query, true);
         xmlhttp.timeout = 10000;
         xmlhttp.send();
@@ -498,3 +522,47 @@ function slideShow() {
 
 } // slideShow
 
+function config() {
+    // Get the modal
+    var modal = document.getElementById('myModal');
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("myBtn");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks the button, open the modal
+    btn.onclick = function () {
+        modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    document.config.media.value = images.media;
+    document.config.volume.value = images.videoVolume;
+    document.config.start.value = "none";
+}
+
+function onSave() {
+    alert(document.config.start.value);
+
+    if (document.config.start.value != null) {
+        images.dateQuery = document.config.start.value;
+    }
+    images.videoVolume = document.config.volume.value;
+    images.media = document.config.media.value;
+
+    createCookie(MEDIA, images.media);
+    createCookie(VIDEO_VOLUME, images.videoVolume);
+}

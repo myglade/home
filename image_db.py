@@ -30,7 +30,7 @@ class Image(Base):
     '''
     path = Column(String(255), unique=True, nullable=False)
     created = Column(DateTime, nullable=False)
-    media_type = Column(String(64))
+    media_type = Column(Integer)
     ext = Column(String(64))
     loc = Column(String(128))
     flag = Column(Integer, default=0)

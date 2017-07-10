@@ -11,8 +11,8 @@ import config
 log = logging.getLogger(config.logname)
 
 
-MEDIA_IMG = 'img'
-MEDIA_VIDEO = 'video'
+MEDIA_IMG = 0
+MEDIA_VIDEO = 1
 
 class Image(object):
     def __init__(self, name, rel_path):

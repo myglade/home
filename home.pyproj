@@ -46,6 +46,9 @@
     <Compile Include="image_manager.py" />
     <Compile Include="media.py" />
     <Compile Include="media_manager.py" />
+    <Compile Include="convert.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="program.py" />
     <Compile Include="vlc_control.py" />
     <Compile Include="web.py">

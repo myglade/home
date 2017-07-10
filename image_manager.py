@@ -98,8 +98,8 @@ class ImageManager(object):
             
             # use modified data instead of taken date in exif 
             # exif date has many errors
-            #if not date:
-            date = str(datetime.datetime.fromtimestamp(origin_mtime))
+            if not date:
+                date = str(datetime.datetime.fromtimestamp(origin_mtime))
                 
             self.imagedb.put(name, rel_path, date, media_type, ext, loc, modify_flag)
 
