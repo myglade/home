@@ -11,6 +11,7 @@ from sqlalchemy import *
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker, class_mapper, ColumnProperty
 import time
+import sys
 
 from db import Base
 
@@ -43,7 +44,13 @@ class Image(Base):
         result = {}                                                                                                                                                                                  
         for prop in class_mapper(self.__class__).iterate_properties:                                                                                                                                 
             if isinstance(prop, ColumnProperty):                                                                                                                                                     
-                result[prop.key] = getattr(self, prop.key)                                                                                                                                           
+                result[prop.key] = getattr(self, prop.key)  
+                if prop.key == "media_type":
+                    if result[prop.key] == 0:
+                        result[prop.key] = "image"
+                    else:
+                        result[prop.key] = "video"
+
         return result
 
 class ImageDb(object):
@@ -83,28 +90,26 @@ class ImageDb(object):
         finally:
             self.db.Session.remove()
 
-    def get_next_by_time(self, id):
+    def to_media_value(self, str):
+        r = []
+        if str == "video":
+            r.append(1)
+        elif str == "image":
+            r.append(0)
+        else:
+            r = [0,1]
+
+        return r
+
+    def get_next_by_date(self, created, media_str):
         retry = 0
 
+        media = self.to_media_value(media_str)
         while True:
             session = self.db.Session()
             try:
-                """ by time """
-                image = session.query(Image).filter(Image.id == id).first()
-                if not image:
-                    image = session.query(Image).order_by(Image.created).first()
-                    return image.as_dict()
-
-                created = image.created
                 image = session.query(Image).\
-                        filter(and_(Image.id > id, Image.created == created)).\
-                        order_by(Image.id).first()
-
-                if image:
-                    return image.as_dict()
-
-                image = session.query(Image).\
-                        filter(Image.created > created).\
+                        filter(Image.created >= created).\
                         order_by(Image.created, Image.id).first()
 
                 if image:
@@ -124,6 +129,60 @@ class ImageDb(object):
                     sys.exit(0)
             finally:
                 self.db.Session.remove()
+
+    def get_next_by_id(self, id, media_str):
+        retry = 0
+
+        media = self.to_media_value(media_str)
+        while True:
+            session = self.db.Session()
+            try:
+                """ by time """
+                image = session.query(Image).\
+                    filter(Image.id == id).\
+                    filter(Image.media_type.in_(media)).first()
+
+                if not image:
+                    image = session.query(Image).\
+                            filter(Image.id == id).first()
+
+                    if not image:
+                        image = session.query(Image).filter(Image.media_type.in_(media)).order_by(Image.created).first()
+                        return image.as_dict()
+
+                created = image.created
+                image = session.query(Image).\
+                        filter(and_(Image.id > id, Image.created == created)).\
+                        filter(Image.media_type.in_(media)).\
+                        order_by(Image.id).first()
+
+                if image:
+                    return image.as_dict()
+
+                image = session.query(Image).\
+                        filter(Image.created > created).\
+                        filter(Image.media_type.in_(media)).\
+                        order_by(Image.created, Image.id).first()
+
+                if image:
+                    return image.as_dict()
+
+                image = session.query(Image).\
+                        filter(Image.media_type.in_(media)).\
+                        order_by(Image.created, Image.id).first()
+
+                return image.as_dict()
+            except Exception as e:
+                log.error("get_next_by_time Error.  %s", e)
+                session.rollback()
+#                self.db.reset_session()
+                retry += 1
+                if retry > 3:
+                    log.error("db operation failure. quit")
+                    sys.exit(0)
+            finally:
+                self.db.Session.remove()
+
 
 """
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))

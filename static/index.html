@@ -87,6 +87,8 @@
 
     </style>
     <script src="slideShow.js?v={{ rand }}"></script>
+
+
 </head>
 
 <body onload="slideShow()">
@@ -112,7 +114,7 @@
                 <table>
                     <tr>
                         <td>Start Date</td>
-                        <td><input type="date" name="start" value="2014-02-09"></td>
+                        <td><input type="date" name="start" /></td>
                     </tr>
                     <tr> <td><p> </td> </tr>
                     <tr>
@@ -123,9 +125,15 @@
                     <tr>
                         <td>Media</td>
                         <td>
-                            <input type="radio" name="media" value="both" checked> Image / Video<br>
-                            <input type="radio" name="media" value="image"> Image<br>
+                            <input type="radio" name="media" value="both" > Image / Video<br>
+                            <input type="radio" name="media" value="image" checked> Image<br>
                             <input type="radio" name="media" value="video"> Video<br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Debug</td>
+                        <td>
+                            <input name="debug" type="checkbox">
                         </td>
                     </tr>
                     <tr> <td><p> </td> </tr>
@@ -133,17 +141,16 @@
                     <tr>
                         <td><p> </td>
                         <td><p> </td>
-                        <td align="right"> <button onclick="onSave()">Save</button></td>
+                        <td align="right"> <button onclick="return onSave();">Save</button></td>
                     </tr>
                 </table>
             </form>
-
+           
         </div>
-
     </div>
 
     <script>
-        config();
+        onConfig();
     </script>
 </body>
 

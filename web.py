@@ -37,12 +37,19 @@ def media_file(path):
 @app.route("/nextimage")
 def next_image():
     id = request.args.get('id')
-    img = image_manager.get_newimage(id)
+    start_date = request.args.get('date')
+    media = request.args.get('media')
+
+    if id:
+        img = image_manager.get_newimage(id, media)
+    elif start_date:
+        img = image_manager.get_newimage_by_date(start_date, media)
 
     img['path'] = "%s/%s" % (config.get("web_media_path"), 
                              img['path'].replace(os.path.sep, '/'))
 
-    log.debug("oid=%s, id=%s", id, img['id'])
+    log.debug("oid=%s, id=%s, start_date=%s, media=%s", 
+              id, img['id'], start_date, media)
 
     created_time = img['created']
 

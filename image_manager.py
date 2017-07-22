@@ -98,8 +98,8 @@ class ImageManager(object):
             
             # use modified data instead of taken date in exif 
             # exif date has many errors
-            if not date:
-                date = str(datetime.datetime.fromtimestamp(origin_mtime))
+            #if not date:
+            date = str(datetime.datetime.fromtimestamp(origin_mtime))
                 
             self.imagedb.put(name, rel_path, date, media_type, ext, loc, modify_flag)
 
@@ -118,7 +118,7 @@ class ImageManager(object):
         if restart_cron:
             self.start()
 
-    def get_newimage(self, id):
+    def get_newimage(self, id, media):
        if not id:
            id = -1
 
@@ -126,7 +126,24 @@ class ImageManager(object):
            id = -1
            self.reset = False
 
-       img = self.imagedb.get_next_by_time(id) 
+       img = self.imagedb.get_next_by_id(id, media) 
+       img['created'] = img['created'].strftime("%Y / %m / %d")
+
+       address = None
+       try:
+           address = self.gpsdb.get_location(img["loc"])
+       except Exception as e:
+           log.debug("In accessing api, exception.  \n%s", e)
+
+       img["address"] = address
+
+       return img
+
+    def get_newimage_by_date(self, start_date, media):
+       if not start_date:
+           return self.get_newimage(-1)
+
+       img = self.imagedb.get_next_by_date(start_date, media) 
        img['created'] = img['created'].strftime("%Y / %m / %d")
 
        address = None
@@ -144,8 +161,12 @@ class ImageManager(object):
 
 image_mgr = ImageManager()
 
-def get_newimage(id):
-    return image_mgr.get_newimage(id)
+def get_newimage(id, media):
+    return image_mgr.get_newimage(id, media)
+
+def get_newimage_by_date(start_date, media):
+    return image_mgr.get_newimage_by_date(start_date, media)
+
 
 def process(type):
     if type == "build":

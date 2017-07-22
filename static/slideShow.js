@@ -17,9 +17,41 @@ DESC_ID = "imageDesc";
 SLIDE_DELAY = "slideDelay";
 FADE_DELAY = "fadeDelay";
 VIDEO_VOLUME = "video_volume";
+START_DATE = "start_date";
+DEBUG = "debug";
+LAST_UPDATE_TIME = "last_update_time";
+ALLOW_TIME = 20 * 60;
+
 MEDIA = "media";
 IMAGE1 = "slideimage0";
 IMAGE2 = "slideimage1";
+
+/* GLOBALS **********************************************************************************************/
+
+var images = {
+    slideDelay: 10000, // The time interval between consecutive slides.
+    fadeDelay: 50, // The time interval between individual opacity changes. This should always be much smaller than slideDelay.  
+    wrapperID: "slideShowImages", // The ID of the <div> element that contains all of the <img> elements to be shown as a slide show.
+    wrapperObject: null, // Will contain a reference to the <div> element that contains all of the <img> elements to be shown as a slide show.
+
+    slideShowID: -1, // A setInterval() ID value used to stop the slide show.
+    slideShowRunning: true, // Used to record when the slide show is running and when it's not. The slide show is always initially running.    
+
+    imageObjects: [],
+    imageDescObjects: [],
+    width: 0,
+    height: 0,
+    queue: [],
+    curIndex: 1,
+    maxQueueSize: 3,
+    url: "nextimage",
+    dateQuery: null,
+    media: "both",
+    videoVolume: "0.5",
+    start: false,
+    debug: false,
+    monitor: null
+}
 
 function createCookie(name, value, days) {
     var expires;
@@ -66,31 +98,28 @@ String.prototype.format = function () {
     return s;
 };
 
+function set_last_update() {
+    createCookie(LAST_UPDATE_TIME, Math.floor(Date.now() / 1000));
+}
+
+function check_liveness() {
+    last_time = parseInt(readCookie(LAST_UPDATE_TIME));
+
+    cur = Math.floor(Date.now() / 1000);
+    d = cur - last_time;
+
+    if (d > ALLOW_TIME) {
+        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s.  RELOAD", d, ALLOW_TIME);
+        location.reload();
+    }
+    else {
+        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s.  ", d, ALLOW_TIME);
+    }
+}
+
 function slideShow() {
 
-    /* GLOBALS **********************************************************************************************/
 
-    var images = {
-        slideDelay: 10000, // The time interval between consecutive slides.
-        fadeDelay: 50, // The time interval between individual opacity changes. This should always be much smaller than slideDelay.  
-        wrapperID: "slideShowImages", // The ID of the <div> element that contains all of the <img> elements to be shown as a slide show.
-        wrapperObject: null, // Will contain a reference to the <div> element that contains all of the <img> elements to be shown as a slide show.
-
-        slideShowID: -1, // A setInterval() ID value used to stop the slide show.
-        slideShowRunning: true, // Used to record when the slide show is running and when it's not. The slide show is always initially running.    
-
-        imageObjects: [],
-        imageDescObjects: [],
-        width: 0,
-        height: 0,
-        queue: [],
-        curIndex: 1,
-        maxQueueSize: 3,
-        url: "nextimage",
-        dateQuery: null,
-        media: "both",
-        videoVolume: "0.5"
-    }
 
     /* MAIN *************************************************************************************************/
     console.log("start");
@@ -139,16 +168,23 @@ function slideShow() {
  //   console.log(images.descObject);
     console.log("READ COOKIE");
     var id = readCookie(IMAGE_ID, -1);
-    id = 4;
+//    id = 3483;
+//    id = 2104;
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay);
     images.media = readCookie(MEDIA, images.media);
+    images.debug = JSON.parse(readCookie(DEBUG, images.debug));
     images.videoVolume = readCookie(VIDEO_VOLUME, images.videoVolume);
+    images.dateQuery = readCookie(START_DATE, "");
+    createCookie(START_DATE, "");
 
     var url = "http://{0}/{1}".format(window.location.host, images.url);
 
     console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
     fillImages(url, id, images.queue, images.maxQueueSize);
+
+    set_last_update();
+    images.monitor = setInterval(check_liveness, 10000);
 
     return;
 
@@ -164,45 +200,78 @@ function slideShow() {
       "type": "img" or "video"
     }
     */
+    function print_queue(queue) {
+        s = "";
+        for (i = 0; i < queue.length; i++)
+            s += queue[i].obj["id"] + " ";
+
+        console.log(s);
+    }
+
+    function video_error(reason) {
+        console.log("ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   [%s] %s", media.obj['id'], reason);
+        location.reload();
+    }
 
     function fillImages(url, id, queue, maxQueueSize) {
+        console.log("call fillImages, id=%s", id);
+
+        if (images.start) {
+            console.log("show already start. Get next of [%s]. queue=%s", id, queue.length)
+            return;
+        }
+
         if (queue.length >= maxQueueSize) {
             completeImagesLoading();
             return;
         }
+        console.log("call fillImages 2, id=%s", id);
 
         //console.log("1. url={0} id={1} queue size={2}".format(url, id, queue.length));
 
         xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                function finish_load() {
+                function finish_load(media) {
                     images.queue.push(media);
-                    console.log("4. id={0} queue size={1}".format(obj['id'], queue.length));
-                    fillImages(url, obj['id'], queue, maxQueueSize);
+                    console.log("[%s] fillImages::finish_load queue size=%s, id=%s", obj['id'], queue.length, id);
+
+                    print_queue(queue);
+                    fillImages(url, media.obj['id'], queue, maxQueueSize);
                 }
 
                 obj = JSON.parse(xmlhttp.responseText);
 
-                console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+                console.log("[%s] fillImages::onreadystatechange url=%s obj=%s", obj['id'], url, xmlhttp.responseText);
 
-                if (obj["media_type"] == 'img') {
+                if (obj["media_type"] == 'image') {
                     media = new Image();
                     media.type = "img";
-                    console.log("load img");
+                    console.log("[%s] fillImages::onreadystatechange load img", obj["id"]);
                     media.onload = function () {
-                        finish_load();
+                        finish_load(media);
                     }
                 }
                 else if (obj["media_type"] == 'video') {
                     media = document.createElement('video');
                     media.type = "video";
-                    console.log("load video");
+                    console.log("[%s] fillImages::onreadystatechange  load video", obj["id"]);
 
                     // https://www.w3schools.com/tags/av_event_canplay.asp
-                    media.oncanplay = function () {
-                        finish_load();
+                    media.onloadedmetadata = function () {
+                        finish_load(media);
                     }
+
+                    media.onerror = function () {
+                        video_error("onerror");
+                    }
+                    media.onstalled = function () {
+                        video_error("onstalled");
+                    }
+                    media.onabort = function () {
+                        video_error("onabort");
+                    }
+                    media.controls = true;
                 }
                 else {
                     alert("invalid format=" + obj["media_type"]);
@@ -214,7 +283,7 @@ function slideShow() {
                 
                 media.obj = obj;
                 media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
-                console.log("media.src " + media.src);
+                console.log("[%s] fillImages::onreadystatechange  media.src=", obj["id"], media.src);
             }
         }
         xmlhttp.onerror = function () {
@@ -225,7 +294,16 @@ function slideShow() {
             failImageLoading();
         }
 
-        query = "{0}?id={1}".format(url, id);
+        query = "{0}?id={1}&media={2}".format(url, id, images.media);
+
+        if (images.dateQuery == null || images.dateQuery == "") {
+            query = "{0}?id={1}&media={2}".format(url, id, images.media);
+        }
+        else {
+            query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
+            images.dateQuery = null;
+        }
+
         xmlhttp.open("GET", query, true);
         xmlhttp.timeout = 10000;
         xmlhttp.send();
@@ -233,16 +311,17 @@ function slideShow() {
     }
 
     function fillOneImage(url, queue) {
+        console.log("call fillOneImage");
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 obj = JSON.parse(xmlhttp.responseText);
 
                 console.log("{0}", obj);
-                if (obj["media_type"] == 'img') {
+                if (obj["media_type"] == 'image') {
                     media = new Image();
                     media.type = "img";
-                    console.log("load img 1");
+                    console.log("[%s] fillOneImage::onreadystatechange  load img 1", obj["id"]);
                     media.onload = function () {
                         images.queue.push(media);
                     }
@@ -251,9 +330,26 @@ function slideShow() {
                     media = document.createElement('video')
                     media.type = "video";
 
-                    console.log("load video 1");
-                    media.oncanplay = function () {
+                    console.log("[%s] fillOneImage::onreadystatechang load video 1", obj["id"]);
+                    media.onloadedmetadata = function () {
                         images.queue.push(media);
+                        console.log("[%s] fillOneImage::media.oncanplay queue size=%s", obj['id'], queue.length);
+                        print_queue(queue);
+                    }
+                    media.onerror = function () {
+                        video_error("onerror");
+                    }
+                    media.onstalled = function () {
+                        video_error("onstalled");
+                    }
+                    media.onabort = function () {
+                        video_error("onabort");
+                    }
+                    if (images.debug) {
+                        media.controls = true;
+                    }
+                    else {
+                        media.controls = false;
                     }
                 }
                 else {
@@ -278,23 +374,13 @@ function slideShow() {
             failImageLoading();
         }
 
-        if (images.dateQuery == null) {
+        if (images.dateQuery == null || images.dateQuery == "") {
             id = queue[queue.length - 1].obj['id'];
 
-            if (images.media == "both") {
-                query = "{0}?id={1}".format(url, id);
-            }
-            else {
-                query = "{0}?id={1}&media={2}".format(url, id, images.media);
-            }
+            query = "{0}?id={1}&media={2}".format(url, id, images.media);
         }
         else {
-            if (images.media == "both") {
-                query = "{0}?date={1}".format(url, images.dateQuery);
-            }
-            else {
-                query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
-            }
+            query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
             images.dateQuery = null;
         }
         xmlhttp.open("GET", query, true);
@@ -314,13 +400,19 @@ function slideShow() {
 
     // start slide show
     function completeImagesLoading() {
-        console.log("succeed to load images");
-        transitionSlides();
+        console.log("succeed to load images. images.start %s", images.start);
+        if (images.start == false) {
+            images.start = true;
+            transitionSlides();
+        }
+        else {
+            console.log("WARNING.  Already started");
+        }
     }
 
     function adjustImage(img, winSize) {
-        console.log("Adjust image : %s x %s ", winSize.w, winSize.h);
-        console.log("Media size : %s x %s", img.clientWidth, img.clientHeight);
+        //console.log("Adjust image : %s x %s ", winSize.w, winSize.h);
+        //console.log("Media size : %s x %s", img.clientWidth, img.clientHeight);
 
         if (img.clientHeight <= winSize.h && img.clientWidth <= winSize.w) {
             img.style.position = "absolute";
@@ -331,7 +423,7 @@ function slideShow() {
             ratio = winSize.w / winSize.h;
             if (img.clientWidth / img.clientHeight > ratio) {
                 // extend width.
-                console.log("extend width");
+                //console.log("extend width");
                 width = winSize.w; 
                 height = img.clientHeight * width / img.clientWidth;
                 img.style.left = 0 + "px";
@@ -340,11 +432,11 @@ function slideShow() {
                 img.style.width = width + "px";
                 img.style.height = height + "px";
 
-                console.log("%f %f %f w=%s h=%s l=%s t=%s", height, img.clientHeight, height - img.clientHeight, img.style.width, img.style.height,
-                    img.style.left, img.style.top);
+                //console.log("%f %f %f w=%s h=%s l=%s t=%s", height, img.clientHeight, height - img.clientHeight, img.style.width, img.style.height,
+                //    img.style.left, img.style.top);
             }
             else {
-                console.log("extend hight");
+                //console.log("extend hight");
                 // extend hight
                 height = winSize.h;
                 width = img.clientWidth * height / img.clientHeight;
@@ -356,7 +448,7 @@ function slideShow() {
                 img.style.height = height + "px";
 
             }
-            console.log("size is smaller than canvas. ratio=%f", ratio);
+            //console.log("size is smaller than canvas. ratio=%f", ratio);
 
             return;
         }
@@ -382,12 +474,12 @@ function slideShow() {
             if (dh > 0) {
                 height = winSize.h;
                 width = img.clientWidth * winSize.h / img.clientHeight;
-                console.log("1." + height + ":" + width)
+                //console.log("1." + height + ":" + width)
             }
             else {
                 width = winSize.w;
                 height = img.clientHeight * winSize.w / img.clientWidth;
-                console.log("2." + height + ":" + width)
+                //console.log("2." + height + ":" + width)
             }
         }
 
@@ -398,7 +490,7 @@ function slideShow() {
         img.style.top = (winSize.h - height) / 2 + "px";
 
         //console.log("2." + width + ":" + height)
-        console.log("3." + img.style.top + ":" + img.style.left)
+        //console.log("3." + img.style.top + ":" + img.style.left)
     }
 
     function getWindowSize() {
@@ -413,7 +505,6 @@ function slideShow() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     function transitionSlides() {
-        console.log("start transition slide");
         var nextMedia = images.queue[0];
         var nextMediaContainer = images.imageObjects[1 - images.curIndex];
         var mediaElement;
@@ -430,22 +521,36 @@ function slideShow() {
         parent.insertBefore(nextMedia, parent.childNodes[0]);
 
         nextMediaContainer.media_type = nextMedia.type
+        nextMediaContainer.obj = nextMedia.obj;
 
         //elementImg.replaceWith(nextImage);
         // after replace, elementImg becomes invalid. refind it
         mediaElement = nextMediaContainer.querySelectorAll(nextMediaContainer.media_type)[0];
         adjustImage(mediaElement, { w: images.width, h: images.height } );
 
-        images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"]
+        if (images.debug) {
+            images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"] + " " + nextMedia.obj["id"] + " " + nextMedia.obj["path"]
+        }
+        else {
+            images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"];
+        }
 
         // get current image
         curMediaContainer = images.imageObjects[images.curIndex];
+
+        if (curMediaContainer.obj == null) {
+            cur_id = -1;
+        }
+        else {
+            cur_id = curMediaContainer.obj["id"];
+        }
+        console.log("start transition cur=%s next=%s", cur_id, nextMediaContainer.obj["id"]);
 
         fadeTransition(curMediaContainer, nextMediaContainer);
     } // transitionSlides
 
     function fadeTransition(curMediaContainer, nextMediaContainer) {
-        console.log("start fade transition");
+        //console.log("start fade transition");
 
         var currentSlideOpacity = 1; // Fade the current slide out.
         var nextSlideOpacity = 0; // Fade the next slide in.
@@ -472,21 +577,28 @@ function slideShow() {
     }
 
     function completeTransition(curMediaContainer, nextMediaContainer) {
-        console.log("complete transition");
 
         obj = images.queue[0].obj
-        createCookie(IMAGE_ID, obj["id"]);
+ //       createCookie(IMAGE_ID, obj["id"]);
+
+        if (curMediaContainer.obj == null) {
+            cur_id = -1;
+        }
+        else {
+            cur_id = curMediaContainer.obj["id"];
+        }
+        console.log("complete transition  cur=%s next=%s", cur_id, nextMediaContainer.obj["id"]);
 
         // if settings are changed, save them
         if (images.slideDelay != parseInt(obj["slide_delay"])) {
             images.slideDelay = parseInt(obj["slide_delay"]);
             createCookie(SLIDE_DELAY, images.slideDelay);
-            console.log("slideDelay changes to " + images.slideDelay);
+           // console.log("slideDelay changes to " + images.slideDelay);
         }
         if (images.fadeDelay != parseInt(obj["fade_delay"])) {
             images.fadeDelay = parseInt(obj["fade_delay"]);
             createCookie(FADE_DELAY, images.fadeDelay);
-            console.log("fadeDelay changes to " + images.fadeDelay);
+            //console.log("fadeDelay changes to " + images.fadeDelay);
         }
 
         // clear old timer
@@ -499,15 +611,20 @@ function slideShow() {
             clearInterval(images.slideShowID);
             mediaElement = nextMediaContainer.querySelectorAll('video')[0];
             mediaElement.onended = function () {
-                console.log("video is ended.  notify");
+                createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
+                set_last_update();
+                console.log("[%s] video Done =================== ", nextMediaContainer.obj["id"]);
                 transitionSlides();
             }
 
-            console.log("start playing video");
+            mediaElement.volume = images.videoVolume;
+            console.log("[%s] start playing video. ", nextMediaContainer.obj["id"]);
             mediaElement.play();
             // start video
         }
         else {
+            createCookie(IMAGE_ID, cur_id);
+            set_last_update();
             // if pic, start new timer
             console.log("start new timer. delay" + images.slideDelay);
             images.slideShowID = setInterval(transitionSlides, images.slideDelay);
@@ -522,7 +639,7 @@ function slideShow() {
 
 } // slideShow
 
-function config() {
+function onConfig() {
     // Get the modal
     var modal = document.getElementById('myModal');
 
@@ -535,6 +652,12 @@ function config() {
     // When the user clicks the button, open the modal
     btn.onclick = function () {
         modal.style.display = "block";
+        //document.config.volume.value = readCookie(VIDEO_VOLUME, "1");
+        document.config.start.value = "none";
+
+        document.config.media.value = images.media;
+        document.config.debug.checked = images.debug;
+        document.config.volume.value = images.videoVolume;
     }
 
     // When the user clicks on <span> (x), close the modal
@@ -549,20 +672,27 @@ function config() {
         }
     }
 
-    document.config.media.value = images.media;
-    document.config.volume.value = images.videoVolume;
-    document.config.start.value = "none";
 }
 
 function onSave() {
-    alert(document.config.start.value);
+    var media = document.config.media;
 
     if (document.config.start.value != null) {
         images.dateQuery = document.config.start.value;
+        createCookie(START_DATE, images.dateQuery);
     }
+    
     images.videoVolume = document.config.volume.value;
     images.media = document.config.media.value;
+    images.debug = document.config.debug.checked;
 
+    createCookie(DEBUG, images.debug);
     createCookie(MEDIA, images.media);
     createCookie(VIDEO_VOLUME, images.videoVolume);
+
+    var modal = document.getElementById('myModal');
+    modal.style.display = "none";
+    location.reload();
+
+    return false;
 }
