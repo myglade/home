@@ -20,6 +20,7 @@ VIDEO_VOLUME = "video_volume";
 START_DATE = "start_date";
 DEBUG = "debug";
 LAST_UPDATE_TIME = "last_update_time";
+QUERY = "query";
 ALLOW_TIME = 20 * 60;
 
 MEDIA = "media";
@@ -176,6 +177,8 @@ function slideShow() {
     images.debug = JSON.parse(readCookie(DEBUG, images.debug));
     images.videoVolume = readCookie(VIDEO_VOLUME, images.videoVolume);
     images.dateQuery = readCookie(START_DATE, "");
+    images.lastQuery = readCookie(QUERY, "");
+
     createCookie(START_DATE, "");
 
     var url = "http://{0}/{1}".format(window.location.host, images.url);
@@ -214,6 +217,8 @@ function slideShow() {
     }
 
     function fillImages(url, id, queue, maxQueueSize) {
+        var query;
+
         console.log("call fillImages, id=%s", id);
 
         if (images.start) {
@@ -280,7 +285,8 @@ function slideShow() {
 
                 // new Image() vs document.createElement('img')
                 // https://stackoverflow.com/questions/6241716/is-there-a-difference-between-new-image-and-document-createelementimg
-                
+
+                media.query = query;
                 media.obj = obj;
                 media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
                 console.log("[%s] fillImages::onreadystatechange  media.src=", obj["id"], media.src);
@@ -297,7 +303,12 @@ function slideShow() {
         query = "{0}?id={1}&media={2}".format(url, id, images.media);
 
         if (images.dateQuery == null || images.dateQuery == "") {
-            query = "{0}?id={1}&media={2}".format(url, id, images.media);
+            if (queue.length == 0 && images.lastQuery) {
+                query = images.lastQuery;
+                console.log("Use last query = %s", images.lastQuery);
+            }
+            else
+                query = "{0}?id={1}&media={2}".format(url, id, images.media);   
         }
         else {
             query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
@@ -311,6 +322,8 @@ function slideShow() {
     }
 
     function fillOneImage(url, queue) {
+        var query;
+
         console.log("call fillOneImage");
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
@@ -358,6 +371,7 @@ function slideShow() {
                 }
 
                 //console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
+                media.query = query;
                 media.obj = obj;
            //     media.onload = function () {
            //         images.queue.push(media);
@@ -522,6 +536,7 @@ function slideShow() {
 
         nextMediaContainer.media_type = nextMedia.type
         nextMediaContainer.obj = nextMedia.obj;
+        nextMediaContainer.query = nextMedia.query;
 
         //elementImg.replaceWith(nextImage);
         // after replace, elementImg becomes invalid. refind it
@@ -623,12 +638,17 @@ function slideShow() {
             // start video
         }
         else {
-            createCookie(IMAGE_ID, cur_id);
+            if (cur_id != -1) {
+                createCookie(IMAGE_ID, cur_id);
+            }
+
             set_last_update();
             // if pic, start new timer
             console.log("start new timer. delay" + images.slideDelay);
             images.slideShowID = setInterval(transitionSlides, images.slideDelay);
         }
+        console.log("media.query=%s", nextMediaContainer.query);
+        createCookie(QUERY, nextMediaContainer.query);
 
         images.queue.shift();
         images.curIndex = 1 - images.curIndex;
@@ -677,12 +697,16 @@ function onConfig() {
 function onSave() {
     var media = document.config.media;
 
-    if (document.config.start.value != null) {
+    if (document.config.start.value) {
         images.dateQuery = document.config.start.value;
         createCookie(START_DATE, images.dateQuery);
+        eraseCookie(QUERY);
     }
     
     images.videoVolume = document.config.volume.value;
+    if (document.config.media.value != images.media)
+        eraseCookie(QUERY);
+
     images.media = document.config.media.value;
     images.debug = document.config.debug.checked;
 
