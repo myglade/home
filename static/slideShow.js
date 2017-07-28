@@ -21,9 +21,10 @@ START_DATE = "start_date";
 DEBUG = "debug";
 LAST_UPDATE_TIME = "last_update_time";
 LAST_UPDATE_ID = "last_update_id";
+UPDATE_COUNT = "update_count";
 
 QUERY = "query";
-ALLOW_TIME = 20 * 60;
+ALLOW_TIME = 40 * 60;
 
 MEDIA = "media";
 IMAGE1 = "slideimage0";
@@ -105,13 +106,20 @@ String.prototype.format = function () {
 function set_last_update(id) {
     last_id = readCookie(LAST_UPDATE_ID, "");
     if (last_id == id) {
-        console.log("Same id.  Skip. id=%s", id);
+        count = parseInt(readCookie(UPDATE_COUNT, "0"));
+        count += 1;
+
+        console.log("Same id.  Skip. count=%s id=%s", count, id);
+
+        createCookie(UPDATE_COUNT, count);
 
         return;
     }
     t = Math.floor(Date.now() / 1000);
     createCookie(LAST_UPDATE_TIME, t);
     createCookie(LAST_UPDATE_ID, id);
+    createCookie(UPDATE_COUNT, 1);
+
     console.log("update checkpoint. id=%s t=%s", id, t);
 }
 
@@ -121,10 +129,13 @@ function check_liveness() {
 
     cur = Math.floor(Date.now() / 1000);
     d = cur - last_time;
+    count = parseInt(readCookie(UPDATE_COUNT, "0"));
 
-    if (d > ALLOW_TIME) {
+    if (d > ALLOW_TIME || count > 3) {
         console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s.  Skip id=%d RELOAD",
             d, ALLOW_TIME, last_id);
+
+        createCookie(UPDATE_COUNT, 0);
         eraseCookie(QUERY);
         location.reload();
     }
