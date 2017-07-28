@@ -183,7 +183,36 @@ class ImageDb(object):
             finally:
                 self.db.Session.remove()
 
+    def get_by_id(self, id, media_str):
+        retry = 0
 
+        media = self.to_media_value(media_str)
+        while True:
+            session = self.db.Session()
+            try:
+                """ by time """
+                image = session.query(Image).\
+                    filter(Image.id == id).\
+                    filter(Image.media_type.in_(media)).first()
+
+                if not image:
+                    image = session.query(Image).\
+                            filter(Image.id == id).first()
+
+                    if not image:
+                        image = session.query(Image).filter(Image.media_type.in_(media)).order_by(Image.created).first()
+
+                return image.as_dict()
+            except Exception as e:
+                log.error("get_next_by_time Error.  %s", e)
+                session.rollback()
+#                self.db.reset_session()
+                retry += 1
+                if retry > 3:
+                    log.error("db operation failure. quit")
+                    sys.exit(0)
+            finally:
+                self.db.Session.remove()
 """
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))
         row = self.cursor.fetchone()

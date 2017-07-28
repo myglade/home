@@ -139,6 +139,23 @@ class ImageManager(object):
 
        return img
 
+    def get_newimage_by_curid(self, id, media):
+       if not id:
+           return self.get_newimage(-1, media)
+
+       img = self.imagedb.get_by_id(id, media) 
+       img['created'] = img['created'].strftime("%Y / %m / %d")
+
+       address = None
+       try:
+           address = self.gpsdb.get_location(img["loc"])
+       except Exception as e:
+           log.debug("In accessing api, exception.  \n%s", e)
+
+       img["address"] = address
+
+       return img
+
     def get_newimage_by_date(self, start_date, media):
        if not start_date:
            return self.get_newimage(-1)
@@ -167,6 +184,8 @@ def get_newimage(id, media):
 def get_newimage_by_date(start_date, media):
     return image_mgr.get_newimage_by_date(start_date, media)
 
+def get_newimage_by_curid(cur_id, media):
+    return image_mgr.get_newimage_by_curid(cur_id, media)
 
 def process(type):
     if type == "build":

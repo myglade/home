@@ -39,11 +39,14 @@ def next_image():
     id = request.args.get('id')
     start_date = request.args.get('date')
     media = request.args.get('media')
+    cur_id = request.args.get('curid')
 
     if id:
         img = image_manager.get_newimage(id, media)
     elif start_date:
         img = image_manager.get_newimage_by_date(start_date, media)
+    elif cur_id:
+        img = image_manager.get_newimage_by_curid(cur_id, media)
 
     img['path'] = "%s/%s" % (config.get("web_media_path"), 
                              img['path'].replace(os.path.sep, '/'))

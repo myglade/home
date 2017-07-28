@@ -20,6 +20,8 @@ VIDEO_VOLUME = "video_volume";
 START_DATE = "start_date";
 DEBUG = "debug";
 LAST_UPDATE_TIME = "last_update_time";
+LAST_UPDATE_ID = "last_update_id";
+
 QUERY = "query";
 ALLOW_TIME = 20 * 60;
 
@@ -51,6 +53,7 @@ var images = {
     videoVolume: "0.5",
     start: false,
     debug: false,
+    cur_id: null,
     monitor: null
 }
 
@@ -99,22 +102,35 @@ String.prototype.format = function () {
     return s;
 };
 
-function set_last_update() {
-    createCookie(LAST_UPDATE_TIME, Math.floor(Date.now() / 1000));
+function set_last_update(id) {
+    last_id = readCookie(LAST_UPDATE_ID, "");
+    if (last_id == id) {
+        console.log("Same id.  Skip. id=%s", id);
+
+        return;
+    }
+    t = Math.floor(Date.now() / 1000);
+    createCookie(LAST_UPDATE_TIME, t);
+    createCookie(LAST_UPDATE_ID, id);
+    console.log("update checkpoint. id=%s t=%s", id, t);
 }
 
 function check_liveness() {
     last_time = parseInt(readCookie(LAST_UPDATE_TIME));
+    last_id = readCookie(LAST_UPDATE_ID, "");
 
     cur = Math.floor(Date.now() / 1000);
     d = cur - last_time;
 
     if (d > ALLOW_TIME) {
-        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s.  RELOAD", d, ALLOW_TIME);
+        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s.  Skip id=%d RELOAD",
+            d, ALLOW_TIME, last_id);
+        eraseCookie(QUERY);
         location.reload();
     }
     else {
-        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s.  ", d, ALLOW_TIME);
+        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s  ",
+            d, ALLOW_TIME, last_id);
     }
 }
 
@@ -170,7 +186,8 @@ function slideShow() {
     console.log("READ COOKIE");
     var id = readCookie(IMAGE_ID, -1);
 //    id = 3483;
-//    id = 2104;
+  //  id = 7824;
+    images.cur_id = 7824;
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay);
     images.media = readCookie(MEDIA, images.media);
@@ -303,9 +320,18 @@ function slideShow() {
         query = "{0}?id={1}&media={2}".format(url, id, images.media);
 
         if (images.dateQuery == null || images.dateQuery == "") {
-            if (queue.length == 0 && images.lastQuery) {
-                query = images.lastQuery;
-                console.log("Use last query = %s", images.lastQuery);
+            if (queue.length == 0 && (images.cur_id || images.lastQuery)) {
+                if (images.cur_id) {
+                    query = "{0}?curid={1}&media={2}".format(url, images.cur_id, images.media);  
+                    console.log("Use cur_id = %s ", query);
+
+                    images.cur_id = null;
+                }
+                else if (images.lastQuery) {
+                    query = images.lastQuery;
+
+                    console.log("Use last query = %s", images.lastQuery);
+                }
             }
             else
                 query = "{0}?id={1}&media={2}".format(url, id, images.media);   
@@ -627,7 +653,7 @@ function slideShow() {
             mediaElement = nextMediaContainer.querySelectorAll('video')[0];
             mediaElement.onended = function () {
                 createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
-                set_last_update();
+                set_last_update(nextMediaContainer.obj["id"]);
                 console.log("[%s] video Done =================== ", nextMediaContainer.obj["id"]);
                 transitionSlides();
             }
@@ -638,11 +664,8 @@ function slideShow() {
             // start video
         }
         else {
-            if (cur_id != -1) {
-                createCookie(IMAGE_ID, cur_id);
-            }
-
-            set_last_update();
+            createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
+            set_last_update(nextMediaContainer.obj["id"]);
             // if pic, start new timer
             console.log("start new timer. delay" + images.slideDelay);
             images.slideShowID = setInterval(transitionSlides, images.slideDelay);
