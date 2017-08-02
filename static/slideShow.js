@@ -105,6 +105,9 @@ String.prototype.format = function () {
 
 function set_last_update(id) {
     last_id = readCookie(LAST_UPDATE_ID, "");
+    console.log("***********************************");
+    console.log("last_id=%s, id=%s", last_id, id);
+
     if (last_id == id) {
         count = parseInt(readCookie(UPDATE_COUNT, "0"));
         count += 1;
@@ -132,16 +135,16 @@ function check_liveness() {
     count = parseInt(readCookie(UPDATE_COUNT, "0"));
 
     if (d > ALLOW_TIME || count > 3) {
-        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s.  Skip id=%d RELOAD",
-            d, ALLOW_TIME, last_id);
+        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s. count=%s  Skip id=%d RELOAD",
+            d, ALLOW_TIME, count, last_id);
 
         createCookie(UPDATE_COUNT, 0);
         eraseCookie(QUERY);
         location.reload();
     }
     else {
-        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s  ",
-            d, ALLOW_TIME, last_id);
+        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s count=%s  ",
+            d, ALLOW_TIME, last_id, count);
     }
 }
 
@@ -214,7 +217,6 @@ function slideShow() {
     console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
     fillImages(url, id, images.queue, images.maxQueueSize);
 
-    set_last_update();
     images.monitor = setInterval(check_liveness, 10000);
 
     return;
@@ -663,11 +665,12 @@ function slideShow() {
             clearInterval(images.slideShowID);
             mediaElement = nextMediaContainer.querySelectorAll('video')[0];
             mediaElement.onended = function () {
-                createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
-                set_last_update(nextMediaContainer.obj["id"]);
                 console.log("[%s] video Done =================== ", nextMediaContainer.obj["id"]);
                 transitionSlides();
             }
+
+            set_last_update(nextMediaContainer.obj["id"]);
+            createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
 
             mediaElement.volume = images.videoVolume;
             console.log("[%s] start playing video. ", nextMediaContainer.obj["id"]);
