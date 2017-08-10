@@ -210,6 +210,8 @@ function slideShow() {
     images.dateQuery = readCookie(START_DATE, "");
     images.lastQuery = readCookie(QUERY, "");
 
+    t = Math.floor(Date.now() / 1000);
+    createCookie(LAST_UPDATE_TIME, t);
     createCookie(START_DATE, "");
 
     var url = "http://{0}/{1}".format(window.location.host, images.url);
