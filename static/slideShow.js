@@ -201,7 +201,7 @@ function slideShow() {
     var id = readCookie(IMAGE_ID, -1);
 //    id = 3483;
   //  id = 7824;
- //   images.cur_id = 7824;
+    //images.cur_id = 28226;
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay);
     images.media = readCookie(MEDIA, images.media);
