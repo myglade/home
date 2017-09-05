@@ -41,6 +41,11 @@ def next_image():
     media = request.args.get('media')
     cur_id = request.args.get('curid')
 
+    if not request.remote_addr.startswith("192.168.") and \
+        not request.remote_addr.startswith("127.0.0."):
+        log.info("not local network.  Disable video service")
+        media = "image"
+
     if id:
         img = image_manager.get_newimage(id, media)
     elif start_date:
@@ -51,8 +56,8 @@ def next_image():
     img['path'] = "%s/%s" % (config.get("web_media_path"), 
                              img['path'].replace(os.path.sep, '/'))
 
-    log.debug("oid=%s, id=%s, start_date=%s, media=%s", 
-              id, img['id'], start_date, media)
+    log.debug("oid=%s, id=%s, start_date=%s, media=%s, ip=%s", 
+              id, img['id'], start_date, media, request.remote_addr)
 
     created_time = img['created']
 

@@ -24,7 +24,7 @@ LAST_UPDATE_ID = "last_update_id";
 UPDATE_COUNT = "update_count";
 
 QUERY = "query";
-ALLOW_TIME = 40 * 60;
+ALLOW_TIME = 2 * 60;
 
 MEDIA = "media";
 IMAGE1 = "slideimage0";
@@ -103,6 +103,11 @@ String.prototype.format = function () {
     return s;
 };
 
+function sleep(ms) {
+    var unixtime_ms = new Date().getTime();
+    while (new Date().getTime() < unixtime_ms + ms) { }
+}
+
 function set_last_update(id) {
     last_id = readCookie(LAST_UPDATE_ID, "");
     console.log("***********************************");
@@ -111,8 +116,17 @@ function set_last_update(id) {
     if (last_id == id) {
         count = parseInt(readCookie(UPDATE_COUNT, "0"));
         count += 1;
-
         console.log("Same id.  Skip. count=%s id=%s", count, id);
+
+        if (count > 3) {
+            console.log("Too many errors.  Skip!!!!!!!!!!!!!!!!!. count=%s id=%s", count, id);
+            eraseCookie(QUERY);
+            eraseCookie(UPDATE_COUNT);
+            sleep(5000);
+            location.reload();
+
+            return;
+        }
 
         createCookie(UPDATE_COUNT, count);
 
@@ -201,7 +215,13 @@ function slideShow() {
     var id = readCookie(IMAGE_ID, -1);
 //    id = 3483;
   //  id = 7824;
-    //images.cur_id = 28226;
+
+    {
+        // for debug purpose.  To set cur_id, set id at the same time
+    //    images.cur_id = 16567;
+    //    id = images.cur_id;
+    }
+
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay);
     images.media = readCookie(MEDIA, images.media);
@@ -243,8 +263,19 @@ function slideShow() {
         console.log(s);
     }
 
-    function video_error(reason) {
+
+    function video_error(reason, media) {
         console.log("ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   [%s] %s", media.obj['id'], reason);
+
+        if (media.loaded == false) {
+            console.log("ERROR before Loading!!   [%s] %s", media.obj['id'], reason);
+            sleep(5000);
+            return;
+        }
+
+        set_last_update(media.obj['id']);
+
+        sleep(5000);
         location.reload();
     }
 
@@ -255,7 +286,7 @@ function slideShow() {
 
         if (images.start) {
             console.log("show already start. Get next of [%s]. queue=%s", id, queue.length)
-            return;
+        //    return;
         }
 
         if (queue.length >= maxQueueSize) {
@@ -271,6 +302,7 @@ function slideShow() {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 function finish_load(media) {
                     images.queue.push(media);
+                    media.loaded = true;
                     console.log("[%s] fillImages::finish_load queue size=%s, id=%s", obj['id'], queue.length, id);
 
                     print_queue(queue);
@@ -300,13 +332,13 @@ function slideShow() {
                     }
 
                     media.onerror = function () {
-                        video_error("onerror");
+                        video_error("onerror", media);
                     }
                     media.onstalled = function () {
-                        video_error("onstalled");
+                        video_error("onstalled", media);
                     }
                     media.onabort = function () {
-                        video_error("onabort");
+                        video_error("onabort", media);
                     }
                     media.controls = true;
                 }
@@ -320,6 +352,7 @@ function slideShow() {
 
                 media.query = query;
                 media.obj = obj;
+                media.loaded = false;
                 media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
                 console.log("[%s] fillImages::onreadystatechange  media.src=", obj["id"], media.src);
             }
@@ -387,17 +420,19 @@ function slideShow() {
                     console.log("[%s] fillOneImage::onreadystatechang load video 1", obj["id"]);
                     media.onloadedmetadata = function () {
                         images.queue.push(media);
+                        media.loaded = true;
+
                         console.log("[%s] fillOneImage::media.oncanplay queue size=%s", obj['id'], queue.length);
                         print_queue(queue);
                     }
                     media.onerror = function () {
-                        video_error("onerror");
+                        video_error("onerror", media);
                     }
                     media.onstalled = function () {
-                        video_error("onstalled");
+                        video_error("onstalled", media);
                     }
                     media.onabort = function () {
-                        video_error("onabort");
+                        video_error("onabort", media);
                     }
                     if (images.debug) {
                         media.controls = true;
@@ -414,6 +449,7 @@ function slideShow() {
                 //console.log("3. url={0} id={1} obj={2}".format(url, id, xmlhttp.responseText));
                 media.query = query;
                 media.obj = obj;
+                media.loaded = false;
            //     media.onload = function () {
            //         images.queue.push(media);
                     //console.log("New image load");
@@ -693,7 +729,10 @@ function slideShow() {
         images.curIndex = 1 - images.curIndex;
         //console.log(nextMediaContainer.obj)
         var url = "http://{0}/{1}".format(window.location.host, images.url);
-        fillOneImage(url, images.queue);
+        //fillOneImage(url, images.queue);
+
+        id = images.queue[images.queue.length - 1].obj['id'];
+        fillImages(url, id, images.queue, images.maxQueueSize);
     }
 
 } // slideShow
