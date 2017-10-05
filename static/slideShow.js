@@ -22,6 +22,7 @@ DEBUG = "debug";
 LAST_UPDATE_TIME = "last_update_time";
 LAST_UPDATE_ID = "last_update_id";
 UPDATE_COUNT = "update_count";
+HISTORY = "obj_history";
 
 QUERY = "query";
 ALLOW_TIME = 2 * 60;
@@ -113,29 +114,9 @@ function set_last_update(id) {
     console.log("***********************************");
     console.log("last_id=%s, id=%s", last_id, id);
 
-    if (last_id == id) {
-        count = parseInt(readCookie(UPDATE_COUNT, "0"));
-        count += 1;
-        console.log("Same id.  Skip. count=%s id=%s", count, id);
-
-        if (count > 3) {
-            console.log("Too many errors.  Skip!!!!!!!!!!!!!!!!!. count=%s id=%s", count, id);
-            eraseCookie(QUERY);
-            eraseCookie(UPDATE_COUNT);
-            sleep(5000);
-            location.reload();
-
-            return;
-        }
-
-        createCookie(UPDATE_COUNT, count);
-
-        return;
-    }
     t = Math.floor(Date.now() / 1000);
     createCookie(LAST_UPDATE_TIME, t);
     createCookie(LAST_UPDATE_ID, id);
-    createCookie(UPDATE_COUNT, 1);
 
     console.log("update checkpoint. id=%s t=%s", id, t);
 }
@@ -146,20 +127,49 @@ function check_liveness() {
 
     cur = Math.floor(Date.now() / 1000);
     d = cur - last_time;
-    count = parseInt(readCookie(UPDATE_COUNT, "0"));
 
-    if (d > ALLOW_TIME || count > 3) {
-        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s. count=%s  Skip id=%d RELOAD",
-            d, ALLOW_TIME, count, last_id);
+    if (d > ALLOW_TIME) {
+        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s. Skip id=%d RELOAD",
+            d, ALLOW_TIME, last_id);
 
         createCookie(UPDATE_COUNT, 0);
         eraseCookie(QUERY);
         location.reload();
     }
     else {
-        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s count=%s  ",
-            d, ALLOW_TIME, last_id, count);
+        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s ",
+            d, ALLOW_TIME, last_id);
     }
+}
+
+function check_history(id) {
+    obj_history = readCookie(HISTORY, "");
+    console.log("#######################   Current history = %s", obj_history);
+
+    list = obj_history.split(',');
+
+    var i = list.length - 1;
+    var count = 0;
+
+    while (i >= 0 && list[i] == id) {
+        count++;
+        i--;
+    }
+
+    if (count >= 3) {
+        console.log("#######################   Too many errors %s ", id);
+        return false;
+    }
+
+    list.push(id);
+    if (list.length > 10)
+        list.shift();
+
+    var r = list.join();
+    console.log("updated history = %s", r);
+    createCookie(HISTORY, r);
+
+    return true;
 }
 
 function slideShow() {
@@ -194,7 +204,7 @@ function slideShow() {
     for (var i = 0; i < images.imageObjects.length; i++) {
         var div = images.imageObjects[i];
         div.style.position = "absolute";
-        div.style.overflow = "hidden";  
+        div.style.overflow = "hidden";
         div.style.opacity = 0;
         div.style.width = images.width + "px";
         div.style.height = images.height + "px";
@@ -210,16 +220,16 @@ function slideShow() {
         desc.style.left = 10 + "px";
     }
 
- //   console.log(images.descObject);
+    //   console.log(images.descObject);
     console.log("READ COOKIE");
     var id = readCookie(IMAGE_ID, -1);
-//    id = 3483;
-  //  id = 7824;
+    //    id = 3483;
+    //  id = 7824;
 
     {
         // for debug purpose.  To set cur_id, set id at the same time
-    //    images.cur_id = 16567;
-    //    id = images.cur_id;
+        //    images.cur_id = 16567;
+        //    id = images.cur_id;
     }
 
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
@@ -286,7 +296,7 @@ function slideShow() {
 
         if (images.start) {
             console.log("show already start. Get next of [%s]. queue=%s", id, queue.length)
-        //    return;
+            //    return;
         }
 
         if (queue.length >= maxQueueSize) {
@@ -370,7 +380,7 @@ function slideShow() {
         if (images.dateQuery == null || images.dateQuery == "") {
             if (queue.length == 0 && (images.cur_id || images.lastQuery)) {
                 if (images.cur_id) {
-                    query = "{0}?curid={1}&media={2}".format(url, images.cur_id, images.media);  
+                    query = "{0}?curid={1}&media={2}".format(url, images.cur_id, images.media);
                     console.log("Use cur_id = %s ", query);
 
                     images.cur_id = null;
@@ -382,7 +392,7 @@ function slideShow() {
                 }
             }
             else
-                query = "{0}?id={1}&media={2}".format(url, id, images.media);   
+                query = "{0}?id={1}&media={2}".format(url, id, images.media);
         }
         else {
             query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
@@ -450,10 +460,10 @@ function slideShow() {
                 media.query = query;
                 media.obj = obj;
                 media.loaded = false;
-           //     media.onload = function () {
-           //         images.queue.push(media);
-                    //console.log("New image load");
-           //     }
+                //     media.onload = function () {
+                //         images.queue.push(media);
+                //console.log("New image load");
+                //     }
                 media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
             }
         }
@@ -479,11 +489,11 @@ function slideShow() {
         xmlhttp.send();
         //console.log("22. query={0} id={1} queue size={2}".format(query, id, queue.length));
     }
-/*
-    function startSlideShow() {
-        //images.slideShowID = setInterval(transitionSlides, images.slideDelay);
-    } // startSlideShow
-*/
+    /*
+        function startSlideShow() {
+            //images.slideShowID = setInterval(transitionSlides, images.slideDelay);
+        } // startSlideShow
+    */
 
     function failImageLoading() {
         console.log("Fail to load images");
@@ -515,7 +525,7 @@ function slideShow() {
             if (img.clientWidth / img.clientHeight > ratio) {
                 // extend width.
                 //console.log("extend width");
-                width = winSize.w; 
+                width = winSize.w;
                 height = img.clientHeight * width / img.clientWidth;
                 img.style.left = 0 + "px";
                 img.style.top = (winSize.h - height) / 2 + "px";
@@ -593,10 +603,27 @@ function slideShow() {
         }
     }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     function transitionSlides() {
         var nextMedia = images.queue[0];
+
+        // if the same object is repeated over 3 tiems, skip it
+        if (check_history(nextMedia.obj["id"]) == false) {
+            // skip
+            id = nextMedia.obj["id"];
+            images.queue.shift();
+            if (images.queue.length == 0) {
+                images.start = false;
+                var url = "http://{0}/{1}".format(window.location.host, images.url);
+                fillImages(url, id, images.queue, images.maxQueueSize);
+
+                return;
+            }
+
+            nextMedia = images.queue[0];
+        }
+
         var nextMediaContainer = images.imageObjects[1 - images.curIndex];
         var mediaElement;
 
@@ -618,7 +645,7 @@ function slideShow() {
         //elementImg.replaceWith(nextImage);
         // after replace, elementImg becomes invalid. refind it
         mediaElement = nextMediaContainer.querySelectorAll(nextMediaContainer.media_type)[0];
-        adjustImage(mediaElement, { w: images.width, h: images.height } );
+        adjustImage(mediaElement, { w: images.width, h: images.height });
 
         if (images.debug) {
             images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"] + " " + nextMedia.obj["id"] + " " + nextMedia.obj["path"]
@@ -671,7 +698,7 @@ function slideShow() {
     function completeTransition(curMediaContainer, nextMediaContainer) {
 
         obj = images.queue[0].obj
- //       createCookie(IMAGE_ID, obj["id"]);
+        //       createCookie(IMAGE_ID, obj["id"]);
 
         if (curMediaContainer.obj == null) {
             cur_id = -1;
@@ -685,7 +712,7 @@ function slideShow() {
         if (images.slideDelay != parseInt(obj["slide_delay"])) {
             images.slideDelay = parseInt(obj["slide_delay"]);
             createCookie(SLIDE_DELAY, images.slideDelay);
-           // console.log("slideDelay changes to " + images.slideDelay);
+            // console.log("slideDelay changes to " + images.slideDelay);
         }
         if (images.fadeDelay != parseInt(obj["fade_delay"])) {
             images.fadeDelay = parseInt(obj["fade_delay"]);
@@ -780,7 +807,7 @@ function onSave() {
         createCookie(START_DATE, images.dateQuery);
         eraseCookie(QUERY);
     }
-    
+
     images.videoVolume = document.config.volume.value;
     if (document.config.media.value != images.media)
         eraseCookie(QUERY);
