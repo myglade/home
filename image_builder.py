@@ -11,6 +11,8 @@ Package : https://pypi.python.org/pypi/piexif
 http://piexif.readthedocs.io/en/latest/sample.html#rotate-image-by-exif-orientation
  
 """
+import config
+from shutil import copyfile
 import decimal
 import logging
 import piexif
@@ -26,11 +28,11 @@ MODIFY_ROTATE=1
 MODIFY_ROTATE_FAIL=2
 NON_JPG=4
 
-class ImageInfo(object):
+class ImageBuilder(object):
     def __init__(self, *args, **kwargs):
-        return super(ImageInfo, self).__init__(*args, **kwargs)
+        return super(ImageBuilder, self).__init__(*args, **kwargs)
 
-    def get(self, name):
+    def get_info(self, name):
         date = None
         loc = None
     
@@ -38,7 +40,6 @@ class ImageInfo(object):
         if ext.lower() not in [".tiff", ".jpg"]:
             raise Exception("Not image file. %s" % name)
 
-        flag = 0
         exif_dict = piexif.load(name)
     
         if piexif.ExifIFD.DateTimeOriginal in exif_dict['Exif']:
@@ -58,16 +59,8 @@ class ImageInfo(object):
             longitude = self.get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
     
             loc = str(latitude) + "," + str(longitude)
- 
-        try:
-            self.rotate_jpeg(name)
-            if self.is_rotate:
-                flag += MODIFY_ROTATE
-        except Exception as e:
-            log.error("Fail to adjust rotation %s. e-%s", name, e)
-            flag += MODIFY_ROTATE_FAIL
 
-        return (date, loc, flag)
+        return (date, loc)
 
     def gps_to_num(self, part):
         return float(part[0]) / float(part[1])
@@ -119,9 +112,9 @@ class ImageInfo(object):
 
                 self.is_rotate = True
 
-    def resize(self, filename, size, new_filename):
-        self.rotate_jpeg(filename)
-        img = Image.open(filename)
+    def resize(self, src, size, dst):
+        self.rotate_jpeg(src)
+        img = Image.open(src)
         
         exif_bytes = None
         if "exif" in img.info:
@@ -132,6 +125,9 @@ class ImageInfo(object):
         height = img.size[1]
 
         if img.size == size or (width < size[0] and height < size[1]):
+            copyfile(filename, new_filename)
+            log.debug("file size is already small.  Just copy.  %s => %s",
+                      src, dst)
             return
 
         if width >= height:
@@ -144,19 +140,50 @@ class ImageInfo(object):
         img = img.resize((w, h), Image.ANTIALIAS)
         
         try:
-            img.save(new_filename, exif=exif_bytes) 
+            img.save(dst, exif=exif_bytes) 
         except Exception as e:
-            print e
+            log.error("Fail to resize %s.  e=%s", src, e.message)
 
-image_info = ImageInfo()
+    def copy(self, src, dst):
+
+
+    def process(self, path):
+        flag = 0
+
+        try:
+            date, loc = self.get_info(path)
+        except Exception as e:
+            log.warn("%s", e)
+         
+        try:
+            self.rotate_jpeg(path)
+            if self.is_rotate:
+                flag += MODIFY_ROTATE
+        except Exception as e:
+            log.error("Fail to adjust rotation %s. e-%s", name, e)
+            flag += MODIFY_ROTATE_FAIL
+
+        path = config.get("image_path")
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        name = os.path.basename(path)
+
+
+        return (date, loc, flag)
+
+
+image_builder = ImageBuilder()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    info = ImageInfo()
-    info.resize("C:\Users\heesung\Desktop\New folder\IMG_7797.JPG", (1920, 1080), 
-                "C:\\Users\\heesung\\Desktop\\New folder\\IMG_7797_1.JPG")
+   # info.resize("C:\\Users\\heesung\\Desktop\\media\\1.JPG", (1920, 1080), 
+   #             "C:\\Users\\heesung\\Desktop\\media\\1920\\1.JPG")
+    b = ImageBuilder()
+    b.process("C:\\Users\\heesung\\Desktop\\media\\1.JPG")
 
 
 '''
@@ -164,7 +191,7 @@ if __name__ == "__main__":
     import db
 
     gps = gps_db.GpsDb(db.Db())
-    imageinfo = ImageInfo()
+    imageinfo = ImageBuilder()
     _, loc, flag = imageinfo.get("y:\\Pictures\\2016-1\\IMG_2049.jpg")
     addr = gps.get_location(loc)
     print addr

@@ -250,10 +250,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
-    import image_info
+    import image_builder
     from db import Db
 
-    image_info = image_info.ImageInfo()
+    image_info = image_info.ImageBuilder()
 
     db = Db()
     imagedb = ImageDb(db)

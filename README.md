@@ -19,7 +19,7 @@ pip install flask
 pip install SQLAlchemy
 
 
-pip install PyMySQL
+x pip install PyMySQL
 https://github.com/PyMySQL/PyMySQL
 
 mysql connector for sqlalchemy
@@ -28,6 +28,7 @@ http://docs.sqlalchemy.org/en/latest/dialects/mysql.html#module-sqlalchemy.diale
 Use oracle mysql connector.
 PyMySQL has bugs. It crashes.
 
+https://dev.mysql.com/downloads/connector/python/
 mysql-connector-python-2.1.6-py2.7-winx64.msi
 
 USE ORACLE.

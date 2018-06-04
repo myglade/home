@@ -88,7 +88,7 @@ class ImageManager(object):
             origin_atime = stinfo.st_atime
 
             try:
-                date, loc, modify_flag = image_info.image_info.get(path)
+                date, loc, modify_flag = image_builder.image_builder.process(path)
             except Exception as e:
                 log.warn("%s", e)
 
