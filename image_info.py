@@ -107,17 +107,46 @@ class ImageInfo(object):
                 elif orientation == 4:
                     img = img.rotate(180).transpose(Image.FLIP_LEFT_RIGHT)
                 elif orientation == 5:
-                    img = img.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
+                    img = img.rotate(-90, expand=1).transpose(Image.FLIP_LEFT_RIGHT)
                 elif orientation == 6:
-                    img = img.rotate(-90)
+                    img = img.rotate(-90, expand=1)
                 elif orientation == 7:
-                    img = img.rotate(90).transpose(Image.FLIP_LEFT_RIGHT)
+                    img = img.rotate(90, expand=1).transpose(Image.FLIP_LEFT_RIGHT)
                 elif orientation == 8:
-                    img = img.rotate(90)
+                    img = img.rotate(90, expand=1)
 
                 img.save(filename, exif=exif_bytes)
 
                 self.is_rotate = True
+
+    def resize(self, filename, size, new_filename):
+        self.rotate_jpeg(filename)
+        img = Image.open(filename)
+        
+        exif_bytes = None
+        if "exif" in img.info:
+            exif_dict = piexif.load(img.info["exif"])
+            exif_bytes = piexif.dump(exif_dict)
+        
+        width = img.size[0]
+        height = img.size[1]
+
+        if img.size == size or (width < size[0] and height < size[1]):
+            return
+
+        if width >= height:
+            w = size[0]
+            h = (w * height) / width
+        else:
+            h = size[1]
+            w = (width * h) / height
+
+        img = img.resize((w, h), Image.ANTIALIAS)
+        
+        try:
+            img.save(new_filename, exif=exif_bytes) 
+        except Exception as e:
+            print e
 
 image_info = ImageInfo()
 
@@ -125,6 +154,12 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
+    info = ImageInfo()
+    info.resize("C:\Users\heesung\Desktop\New folder\IMG_7797.JPG", (1920, 1080), 
+                "C:\\Users\\heesung\\Desktop\\New folder\\IMG_7797_1.JPG")
+
+
+'''
     import gps_db
     import db
 
@@ -134,3 +169,5 @@ if __name__ == "__main__":
     addr = gps.get_location(loc)
     print addr
  #   get_img_info("/scratch/heuikim/Downloads/1.JPG")
+ '''
+
