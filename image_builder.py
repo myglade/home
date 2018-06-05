@@ -115,7 +115,7 @@ class ImageBuilder(object):
     def resize(self, src, size, dst):
         self.rotate_jpeg(src)
         img = Image.open(src)
-        
+          
         exif_bytes = None
         if "exif" in img.info:
             exif_dict = piexif.load(img.info["exif"])
@@ -145,7 +145,7 @@ class ImageBuilder(object):
             log.error("Fail to resize %s.  e=%s", src, e.message)
 
     def copy(self, src, dst):
-
+        pass
 
     def process(self, path):
         flag = 0
