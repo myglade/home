@@ -28,9 +28,23 @@ MODIFY_ROTATE=1
 MODIFY_ROTATE_FAIL=2
 NON_JPG=4
 
+class ImageInfo(object):
+    def __init__(self, path=path, date=date, loc=loc, rotate_flag=rotate_flag):
+        self.date = date
+        self.loc = loc
+        self.path = path
+        self.rotate_flag = rotate_flag
+
 class ImageBuilder(object):
+    DEFAULT_SIZE = (1920, 1080)
+    SMALL_SIZE = (1280, 720)
+    THUMBNAIL = (320, 240)
+
     def __init__(self, *args, **kwargs):
-        return super(ImageBuilder, self).__init__(*args, **kwargs)
+        self.image_path = config.get("image_path")
+
+        if not os.path.exists(self.image_path):
+            os.makedirs(self.image_path)
 
     def get_info(self, name):
         date = None
@@ -113,7 +127,6 @@ class ImageBuilder(object):
                 self.is_rotate = True
 
     def resize(self, src, size, dst):
-        self.rotate_jpeg(src)
         img = Image.open(src)
           
         exif_bytes = None
@@ -126,8 +139,8 @@ class ImageBuilder(object):
 
         if img.size == size or (width < size[0] and height < size[1]):
             copyfile(filename, new_filename)
-            log.debug("file size is already small.  Just copy.  %s => %s",
-                      src, dst)
+            log.debug("file size is already small.  Just copy.  size=%s %s => %s",
+                      size, src, dst)
             return
 
         if width >= height:
@@ -144,34 +157,54 @@ class ImageBuilder(object):
         except Exception as e:
             log.error("Fail to resize %s.  e=%s", src, e.message)
 
-    def copy(self, src, dst):
-        pass
+        log.debug("file is resized to %s.  %s => %s",
+                  size, src, dst)
 
-    def process(self, path):
+    def copy(self, src, dst_path, name):
+        # resize to default 
+        if not os.path.exists(dst_path):
+            os.makedirs(dst_path)
+
+        self.resize(src, self.DEFAULT_SIZE, os.path.join(dst_path, name))
+
+        # resize to small
+        path = os.path.join(dst_path, str(self.SMALL_SIZE[0]))
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        self.resize(src, self.SMALL_SIZE, os.path.join(path, name))
+
+        # resize to thumbnail
+        path = os.path.join(dst_path, str(self.THUMBNAIL[0]))
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        self.resize(src, self.THUMBNAIL, os.path.join(path, name))
+
+    def process(self, src):
         flag = 0
 
         try:
-            date, loc = self.get_info(path)
+            date, loc = self.get_info(src)
         except Exception as e:
             log.warn("%s", e)
          
         try:
-            self.rotate_jpeg(path)
+            self.rotate_jpeg(src)
             if self.is_rotate:
                 flag += MODIFY_ROTATE
         except Exception as e:
-            log.error("Fail to adjust rotation %s. e-%s", name, e)
+            log.error("Fail to adjust rotation %s. e-%s", src, e)
             flag += MODIFY_ROTATE_FAIL
 
-        path = config.get("image_path")
+        # make full dst path
+        name = os.path.basename(src)
+        temp = date.split(':')
+        dst_path = os.path.join(self.image_path, temp[0], temp[1])
 
-        if not os.path.exists(path):
-            os.makedirs(path)
+        self.copy(src, dst_path, name)
 
-        name = os.path.basename(path)
-
-
-        return (date, loc, flag)
+        return ImageInfo(dst_path, date, loc, flag)
 
 
 image_builder = ImageBuilder()

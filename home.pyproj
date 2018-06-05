@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{56e79734-c2b1-4cac-b30b-19ff23bf601c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>image_info.py</StartupFile>
+    <StartupFile>image_builder.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -41,8 +41,8 @@
     <Compile Include="imagelist.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="image_builder.py" />
     <Compile Include="image_db.py" />
-    <Compile Include="image_info.py" />
     <Compile Include="image_manager.py" />
     <Compile Include="media.py" />
     <Compile Include="media_manager.py" />
