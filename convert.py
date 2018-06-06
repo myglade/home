@@ -1,39 +1,58 @@
+import config
 import datetime
+import log
 import os
 from datetime import timedelta
 import time
 
-def convert(path):   
-    video_type = ['avi', 'm2ts']
-    for root, dirs, files in os.walk(unicode(path)):
-        for file in files:
-            filename, ext = os.path.splitext(file)
-            ext = ext[1:].lower()
-            if ext not in video_type:
-                continue
+log = logging.getLogger(config.logname)
 
-            path = os.path.join(root, file)
-            print "Check %s" % path
-            stinfo = os.stat(path)
-            origin_mtime = stinfo.st_mtime
-            origin_atime = stinfo.st_atime
+'''
+https://www.scribd.com/doc/87043367/HandBrake-CLI-Guide
 
-            output = path + ".mp4"
-            if os.path.exists(output):
-                print "%s already exists" % output
-                continue
 
-            cmd = "HandBrakeCLI.exe -i \"%s\" -o \"%s\"" % (path, output)
-            print cmd 
-            print "*******************************************************"
-            r = os.system(cmd)
-            print "*******************************************************"
-            if r != 0:
-                print "FAIL!!!!!!!!!!!!!!!!!!!!!!    %s" % path
-                os.remove(output)
-                continue
+HandBrakeCLI.exe -vo -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize=8000:vbv-maxrate=4000 --width 1280 --height 720
 
-            os.utime(output, (origin_atime, origin_mtime))
+vbv-bufsize = 2 * vbv-maxrate
+
+Youtube : in general, vbv-maxrate=5000
+
+'''
+ENCODER = 'HandBrakeCLI.exe -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize={bufsize}:vbv-maxrate={rate} --width 1280 --height 720'
+
+def convert(src, dst_path, maxrate=4000):   
+    video_type = ['avi', 'm2ts', 'mp4', 'mov']
+
+    filename, ext = os.path.splitext(src)
+    ext = ext[1:].lower()
+    if ext not in video_type:
+        return
+
+    stinfo = os.stat(src)
+    origin_mtime = stinfo.st_mtime
+    origin_atime = stinfo.st_atime
+
+    if ext == 'avi' or ext == 'm2ts':
+        # if already converted to mp4, skip it
+        temp = filename + ".mp4"
+        if os.path.exists(output):
+            log.info("%s already exists", temp)
+            return
+
+    filename, ext = os.path.splitext(os.path.basename(src))
+    dst = os.path.join(dst_path, filename + ".mp4")
+
+    cmd = ENCODER.format({ "in":src, "out":dst })
+    print cmd 
+    print "*******************************************************"
+    r = os.system(cmd)
+    print "*******************************************************"
+    if r != 0:
+        print "FAIL!!!!!!!!!!!!!!!!!!!!!!    %s" % path
+        os.remove(output)
+        continue
+
+    os.utime(output, (origin_atime, origin_mtime))
 
     print "done"
 

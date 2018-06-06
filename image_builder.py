@@ -19,7 +19,6 @@ import piexif
 from PIL import Image
 import os
 
-import config
 
 log = logging.getLogger(config.logname)
 
