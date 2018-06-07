@@ -76,6 +76,7 @@ class ImageManager(object):
             self.update_imagedb(image, prop)
 
     def build_imagedb(self, reset, restart_cron=False):
+
         def image_add(name, rel_path, path, ext, media_type):
             log.debug('scan %s', path)
 
@@ -87,10 +88,13 @@ class ImageManager(object):
             origin_mtime = stinfo.st_mtime
             origin_atime = stinfo.st_atime
 
-            try:
-                image_info = image_builder.image_builder.process(path)
-            except Exception as e:
-                log.warn("%s", e)
+            
+                try:
+                    image_info = image_builder.image_builder.process(path)
+                except Exception as e:
+                    log.warn("%s", e)
+            else:
+                convert()
 
             stinfo = os.stat(path)
             if stinfo.st_mtime != origin_mtime:

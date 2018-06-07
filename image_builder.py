@@ -12,6 +12,7 @@ http://piexif.readthedocs.io/en/latest/sample.html#rotate-image-by-exif-orientat
  
 """
 import config
+import imagelist
 from shutil import copyfile
 import decimal
 import logging
@@ -28,7 +29,7 @@ MODIFY_ROTATE_FAIL=2
 NON_JPG=4
 
 class ImageInfo(object):
-    def __init__(self, path=path, date=date, loc=loc, rotate_flag=rotate_flag):
+    def __init__(self, path, date, loc, rotate_flag):
         self.date = date
         self.loc = loc
         self.path = path
@@ -39,18 +40,26 @@ class ImageBuilder(object):
     SMALL_SIZE = (1280, 720)
     THUMBNAIL = (320, 240)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, scan_path, video_rate=4000):
         self.image_path = config.get("image_path")
 
         if not os.path.exists(self.image_path):
             os.makedirs(self.image_path)
 
-    def get_info(self, name):
+        self.rate = video_rate
+
+        paths = scan_path.split(";")
+        self.scan_path = list(set(paths))
+
+        self.ext = ['jpg', 'gif', 'png', 'tiff', 'mp4', 'm4v', 'mov']
+        self.image_type = ['jpg', 'gif', 'png', 'tiff']
+
+
+    def get_info(self, name, ext):
         date = None
         loc = None
     
-        _, ext = os.path.splitext(name)
-        if ext.lower() not in [".tiff", ".jpg"]:
+        if ext not in ["tiff", "jpg"]:
             raise Exception("Not image file. %s" % name)
 
         exif_dict = piexif.load(name)
@@ -180,11 +189,57 @@ class ImageBuilder(object):
 
         self.resize(src, self.THUMBNAIL, os.path.join(path, name))
 
-    def process(self, src):
+        def convert_video(self, src, ext):   
+            video_type = ['avi', 'm2ts', 'mp4', 'mov']
+
+            filename, ext = os.path.splitext(src)
+            ext = ext[1:].lower()
+            if ext not in video_type:
+                return
+
+            stinfo = os.stat(src)
+            origin_mtime = stinfo.st_mtime
+            origin_atime = stinfo.st_atime
+
+            d = datetime.datetime.fromtimestamp(origin_mtime)
+            dst_path = os.path.join(self.image_path, d.strftime('%Y'), d.strftime('%m'))
+
+            if ext == 'avi' or ext == 'm2ts':
+                # if already converted to mp4, skip it
+                temp = filename + ".mp4"
+                if os.path.exists(temp):
+                    log.info("%s already exists", temp)
+                    return
+
+            filename, ext = os.path.splitext(os.path.basename(src))
+            dst = os.path.join(dst_path, filename + ".mp4")
+
+            input = { "in":src, "out":dst, "rate": self.rate, "bufsize":self.rate*2 }
+            cmd = ENCODER.format(**input)
+            print cmd
+            log.debug(cmd) 
+            log.debug("*******************************************************")
+            r = os.system(cmd)
+            log.debug("*******************************************************")
+            if r != 0:
+                log.error("FAIL!  %s", src)
+                if os.path.exists(dst):
+                    os.remove(dst)
+                return
+
+            os.utime(dst, (origin_atime, origin_mtime))
+
+            log.info("convert: %s", dst)
+
+    def process(self, src, ext, media_type):
         flag = 0
 
+        if media_type == imagelist.MEDIA_VIDEO:
+            convert(src, ext)
+            return
+
         try:
-            date, loc = self.get_info(src)
+            date, loc = self.get_info(src, ext)
         except Exception as e:
             log.warn("%s", e)
          
@@ -206,6 +261,37 @@ class ImageBuilder(object):
         return ImageInfo(dst_path, date, loc, flag)
 
 
+    def scan(self, callback):   
+        log.info("start scan")
+
+        self.imagelist = [] 
+        for spath in self.scan_path:
+            if not spath:
+                continue
+            for root, dirs, files in os.walk(unicode(spath)):
+                for file in files:
+                    filename, ext = os.path.splitext(file)
+                    ext = ext[1:].lower()
+                    if ext not in self.ext:
+                        continue
+
+                    if ext in self.image_type:
+                        media_type = MEDIA_IMG
+                    else:
+                        media_type = MEDIA_VIDEO
+
+                    path = os.path.join(root, file)
+                    l = len(unicode(self.seed_path))
+                    rel_path = os.path.join(root[l:], file)
+                    callback(file, rel_path, path, ext, media_type)
+                    #self.imagelist.append(Image(file, rel_path))
+
+        log.info("finish scan")
+        if self.cron_callback:
+            self.cron_callback(self.imagelist)
+
+        return self.imagelist
+
 image_builder = ImageBuilder()
 
 if __name__ == "__main__":
@@ -215,7 +301,7 @@ if __name__ == "__main__":
    # info.resize("C:\\Users\\heesung\\Desktop\\media\\1.JPG", (1920, 1080), 
    #             "C:\\Users\\heesung\\Desktop\\media\\1920\\1.JPG")
     b = ImageBuilder()
-    b.process("C:\\Users\\heesung\\Desktop\\media\\1.JPG")
+    b.process("C:\\Users\\heesung\\Desktop\\media\\1.JPG", "jpg", 0)
 
 
 '''

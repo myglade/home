@@ -1,6 +1,6 @@
 import config
 import datetime
-import log
+import logging
 import os
 from datetime import timedelta
 import time
@@ -20,7 +20,7 @@ Youtube : in general, vbv-maxrate=5000
 '''
 ENCODER = 'HandBrakeCLI.exe -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize={bufsize}:vbv-maxrate={rate} --width 1280 --height 720'
 
-def convert(src, dst_path, maxrate=4000):   
+def convert(src, dst_path, rate=4000):   
     video_type = ['avi', 'm2ts', 'mp4', 'mov']
 
     filename, ext = os.path.splitext(src)
@@ -35,26 +35,29 @@ def convert(src, dst_path, maxrate=4000):
     if ext == 'avi' or ext == 'm2ts':
         # if already converted to mp4, skip it
         temp = filename + ".mp4"
-        if os.path.exists(output):
+        if os.path.exists(temp):
             log.info("%s already exists", temp)
             return
 
     filename, ext = os.path.splitext(os.path.basename(src))
     dst = os.path.join(dst_path, filename + ".mp4")
 
-    cmd = ENCODER.format({ "in":src, "out":dst })
-    print cmd 
-    print "*******************************************************"
+    input = { "in":src, "out":dst, "rate": rate, "bufsize":rate*2 }
+    cmd = ENCODER.format(**input)
+    print cmd
+    log.debug(cmd) 
+    log.debug("*******************************************************")
     r = os.system(cmd)
-    print "*******************************************************"
+    log.debug("*******************************************************")
     if r != 0:
-        print "FAIL!!!!!!!!!!!!!!!!!!!!!!    %s" % path
-        os.remove(output)
-        continue
+        log.error("FAIL!  %s", src)
+        if os.path.exists(dst):
+            os.remove(dst)
+        return
 
-    os.utime(output, (origin_atime, origin_mtime))
+    os.utime(dst, (origin_atime, origin_mtime))
 
-    print "done"
+    log.info("convert: %s", dst)
 
 def fix(path):
     for root, dirs, files in os.walk(unicode(path)):
@@ -89,4 +92,5 @@ def fix(path):
     print "done"
 
 if __name__ == "__main__":
-    fix("Y:\\Pictures\\jin\\")
+    convert("C:\\Users\\heesung\\Desktop\\media\\IMG_8638.MOV",
+            "C:\\Users\\heesung\\Desktop\\media\\movie")
