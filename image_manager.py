@@ -46,81 +46,8 @@ class ImageManager(object):
 
         return super(ImageManager, self).__init__()
         
-    def start(self, path=None):
-        if self.media:
-            return
-
-        if path:
-            self.path = path
-        self.media = Media(self.path, "image")
-        self.media.start_cron(callback=self.scan_callback)
-
-    def stop(self):
-        if not self.media:
-            return
-
-        self.media.stop_cron()
-        self.media = None
-
     def set_media_path(self, path):
         self.path = path
-
-    def scan_callback(self, imagelist):
-        """ Not implemented yet """
-
-        # get only new images. ie. exclude existing images of db
-        newimages = self.get_newimages(imagelist)
-
-        for image in newimages:
-            prop = self.get_image_property(image)
-            self.update_imagedb(image, prop)
-
-    def build_imagedb(self, reset, restart_cron=False):
-
-        def image_add(name, rel_path, path, ext, media_type):
-            log.debug('scan %s', path)
-
-            date = None
-            loc = None
-            modify_flag = 0
-
-            stinfo = os.stat(path)
-            origin_mtime = stinfo.st_mtime
-            origin_atime = stinfo.st_atime
-
-            
-                try:
-                    image_info = image_builder.image_builder.process(path)
-                except Exception as e:
-                    log.warn("%s", e)
-            else:
-                convert()
-
-            stinfo = os.stat(path)
-            if stinfo.st_mtime != origin_mtime:
-                os.utime(path, (origin_atime, origin_mtime))
-            
-            # use modified data instead of taken date in exif 
-            # exif date has many errors
-            #if not date:
-            date = str(datetime.datetime.fromtimestamp(origin_mtime))
-                
-            self.imagedb.put(name, rel_path, date, media_type, ext, loc, modify_flag)
-
-        if not self.path:
-            log.error("path is not set")
-            return
-
-        if reset:
-            self.imagedb.reset()
-
-        scan_path = config.get("image_scan_path")
-        self.stop()
-        imagelist = Imagelist(self.path, scan_path)
-        images = imagelist.scan(image_add)
-
-        if restart_cron:
-            self.start()
 
     def get_newimage(self, id, media):
        if not id:
@@ -177,8 +104,17 @@ class ImageManager(object):
 
        return img
 
-    def update_imagedb(self, image, prop):
-        pass
+    def build_imagedb(self, reset, restart_cron=False):
+        if not self.path:
+            log.error("path is not set")
+            return
+
+        if reset:
+            self.imagedb.reset()
+
+        scan_path = config.get("image_scan_path")
+        image_builder.image_builder.start(self.imagedb, scan_path)
+
 
 image_mgr = ImageManager()
 

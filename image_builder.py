@@ -11,7 +11,21 @@ Package : https://pypi.python.org/pypi/piexif
 http://piexif.readthedocs.io/en/latest/sample.html#rotate-image-by-exif-orientation
  
 """
+
+'''
+https://www.scribd.com/doc/87043367/HandBrake-CLI-Guide
+
+
+HandBrakeCLI.exe -vo -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize=8000:vbv-maxrate=4000 --width 1280 --height 720
+
+vbv-bufsize = 2 * vbv-maxrate
+
+Youtube : in general, vbv-maxrate=5000
+
+'''
+
 import config
+import datetime
 import imagelist
 from shutil import copyfile
 import decimal
@@ -28,6 +42,11 @@ MODIFY_ROTATE=1
 MODIFY_ROTATE_FAIL=2
 NON_JPG=4
 
+MEDIA_IMG = 0
+MEDIA_VIDEO = 1
+
+ENCODER = 'HandBrakeCLI.exe -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize={bufsize}:vbv-maxrate={rate} --width 1280 --height 720'
+
 class ImageInfo(object):
     def __init__(self, path, date, loc, rotate_flag):
         self.date = date
@@ -40,7 +59,7 @@ class ImageBuilder(object):
     SMALL_SIZE = (1280, 720)
     THUMBNAIL = (320, 240)
 
-    def __init__(self, scan_path, video_rate=4000):
+    def __init__(self, video_rate=4000):
         self.image_path = config.get("image_path")
 
         if not os.path.exists(self.image_path):
@@ -48,12 +67,11 @@ class ImageBuilder(object):
 
         self.rate = video_rate
 
-        paths = scan_path.split(";")
-        self.scan_path = list(set(paths))
-
         self.ext = ['jpg', 'gif', 'png', 'tiff', 'mp4', 'm4v', 'mov']
         self.image_type = ['jpg', 'gif', 'png', 'tiff']
+        self.video_type = ['avi', 'm2ts', 'mp4', 'mov']
 
+        self.db = None
 
     def get_info(self, name, ext):
         date = None
@@ -168,76 +186,9 @@ class ImageBuilder(object):
         log.debug("file is resized to %s.  %s => %s",
                   size, src, dst)
 
-    def copy(self, src, dst_path, name):
-        # resize to default 
-        if not os.path.exists(dst_path):
-            os.makedirs(dst_path)
-
-        self.resize(src, self.DEFAULT_SIZE, os.path.join(dst_path, name))
-
-        # resize to small
-        path = os.path.join(dst_path, str(self.SMALL_SIZE[0]))
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        self.resize(src, self.SMALL_SIZE, os.path.join(path, name))
-
-        # resize to thumbnail
-        path = os.path.join(dst_path, str(self.THUMBNAIL[0]))
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        self.resize(src, self.THUMBNAIL, os.path.join(path, name))
-
-        def convert_video(self, src, ext):   
-            video_type = ['avi', 'm2ts', 'mp4', 'mov']
-
-            filename, ext = os.path.splitext(src)
-            ext = ext[1:].lower()
-            if ext not in video_type:
-                return
-
-            stinfo = os.stat(src)
-            origin_mtime = stinfo.st_mtime
-            origin_atime = stinfo.st_atime
-
-            d = datetime.datetime.fromtimestamp(origin_mtime)
-            dst_path = os.path.join(self.image_path, d.strftime('%Y'), d.strftime('%m'))
-
-            if ext == 'avi' or ext == 'm2ts':
-                # if already converted to mp4, skip it
-                temp = filename + ".mp4"
-                if os.path.exists(temp):
-                    log.info("%s already exists", temp)
-                    return
-
-            filename, ext = os.path.splitext(os.path.basename(src))
-            dst = os.path.join(dst_path, filename + ".mp4")
-
-            input = { "in":src, "out":dst, "rate": self.rate, "bufsize":self.rate*2 }
-            cmd = ENCODER.format(**input)
-            print cmd
-            log.debug(cmd) 
-            log.debug("*******************************************************")
-            r = os.system(cmd)
-            log.debug("*******************************************************")
-            if r != 0:
-                log.error("FAIL!  %s", src)
-                if os.path.exists(dst):
-                    os.remove(dst)
-                return
-
-            os.utime(dst, (origin_atime, origin_mtime))
-
-            log.info("convert: %s", dst)
-
-    def process(self, src, ext, media_type):
-        flag = 0
-
-        if media_type == imagelist.MEDIA_VIDEO:
-            convert(src, ext)
-            return
-
+    def convert_image(self, src, name, ext, stinfo):
+        log.info("start convert image. src=%s, name=%s, ext=%s",
+                 src, name, ext)
         try:
             date, loc = self.get_info(src, ext)
         except Exception as e:
@@ -245,27 +196,126 @@ class ImageBuilder(object):
          
         try:
             self.rotate_jpeg(src)
+
             if self.is_rotate:
-                flag += MODIFY_ROTATE
+                modify_flag += MODIFY_ROTATE
+                # set original timestamp to rotated one
+                os.utime(path, (stinfo.st_atime, stinfo.st_mtime))
         except Exception as e:
             log.error("Fail to adjust rotation %s. e-%s", src, e)
-            flag += MODIFY_ROTATE_FAIL
+            modify_flag += MODIFY_ROTATE_FAIL
 
-        # make full dst path
-        name = os.path.basename(src)
         temp = date.split(':')
-        dst_path = os.path.join(self.image_path, temp[0], temp[1])
+        rel_path =  os.path.join(temp[0], temp[1])
+        dst_path = os.path.join(self.image_path, rel_path)
 
-        self.copy(src, dst_path, name)
+        # resize to default 
+        if not os.path.exists(dst_path):
+            os.makedirs(dst_path)
 
-        return ImageInfo(dst_path, date, loc, flag)
+        filename = name + "." + ext
+        dst = os.path.join(dst_path, filename)
+        self.resize(src, self.DEFAULT_SIZE, dst)
+        os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
 
+        # resize to small
+        path = os.path.join(dst_path, str(self.SMALL_SIZE[0]))
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-    def scan(self, callback):   
+        dst = os.path.join(path, filename)
+        self.resize(src, self.SMALL_SIZE, dst)
+        os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
+
+        # resize to thumbnail
+        path = os.path.join(dst_path, str(self.THUMBNAIL[0]))
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        dst = os.path.join(path, filename)
+        self.resize(src, self.THUMBNAIL, dst)
+        os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
+
+        if self.db:
+            date = str(datetime.datetime.fromtimestamp(stinfo.st_mtime))
+            self.db.put(filename, 
+                        rel_path, 
+                        date,
+                        MEDIA_IMG,
+                        loc, 
+                        modify_flag)
+
+        log.info("end convert image. src=%s, name=%s, ext=%s",
+                 src, name, ext)
+
+    def convert_video(self, src, name, ext, stinfo):   
+        log.info("start convert video. src=%s, name=%s, ext=%s",
+                 src, name, ext)
+
+        d = datetime.datetime.fromtimestamp(stinfo.st_mtime)
+
+        # {path}/2010/10
+        rel_path = os.path.join(d.strftime('%Y'), d.strftime('%m'))
+        dst_path = os.path.join(self.image_path, rel_path)
+
+        if ext == 'avi' or ext == 'm2ts':
+            # if already converted to mp4, skip it
+            temp = name + ".mp4"
+            if os.path.exists(temp):
+                log.info("%s already exists", temp)
+                return
+
+        if not os.path.exists(dst_path):
+            os.makedirs(dst_path)
+
+        dst = os.path.join(dst_path, name + ".mp4")
+
+        input = { "in":src, 
+                 "out":dst, 
+                 "rate": self.rate, 
+                 "bufsize":self.rate*2 }
+
+        cmd = ENCODER.format(**input)
+
+        log.debug(cmd) 
+        log.debug("*******************************************************")
+        r = os.system(cmd)
+        log.debug("*******************************************************")
+        if r != 0:
+            log.error("Fail! convert video. src=%s, name=%s, ext=%s", 
+                      src, name, ext)
+
+            if os.path.exists(dst):
+                os.remove(dst)
+            return
+
+        log.info("convert: %s", dst)
+        os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
+
+        if self.db:
+            self.db.put(name + ".mp4", 
+                        rel_path, 
+                        str(d),
+                        MEDIA_VIDEO,
+                        None, 
+                        0)
+
+        log.info("end convert video. src=%s, name=%s, ext=%s",
+                 src, name, ext)
+
+    def process(self, src, name, ext, media_type):
+        stinfo = os.stat(src)
+
+        if media_type == MEDIA_VIDEO:
+            self.convert_video(src, name, ext, stinfo)
+        else:
+            self.convert_image(src, name, ext, stinfo)
+ 
+
+    def scan(self, scan_path):   
         log.info("start scan")
 
-        self.imagelist = [] 
-        for spath in self.scan_path:
+        for spath in scan_path:
             if not spath:
                 continue
             for root, dirs, files in os.walk(unicode(spath)):
@@ -281,16 +331,15 @@ class ImageBuilder(object):
                         media_type = MEDIA_VIDEO
 
                     path = os.path.join(root, file)
-                    l = len(unicode(self.seed_path))
-                    rel_path = os.path.join(root[l:], file)
-                    callback(file, rel_path, path, ext, media_type)
-                    #self.imagelist.append(Image(file, rel_path))
+                    self.process(path, filename, ext, media_type)
 
-        log.info("finish scan")
-        if self.cron_callback:
-            self.cron_callback(self.imagelist)
+    def start(self, db, paths):
+        self.db = db
+        t = paths.split(";")
+        scan_path = list(set(t))
 
-        return self.imagelist
+        self.scan(scan_path)
+        
 
 image_builder = ImageBuilder()
 
@@ -301,7 +350,8 @@ if __name__ == "__main__":
    # info.resize("C:\\Users\\heesung\\Desktop\\media\\1.JPG", (1920, 1080), 
    #             "C:\\Users\\heesung\\Desktop\\media\\1920\\1.JPG")
     b = ImageBuilder()
-    b.process("C:\\Users\\heesung\\Desktop\\media\\1.JPG", "jpg", 0)
+    #b.process("C:\\Users\\heesung\\Desktop\\media\\1.JPG", "jpg", 0)
+    b.start(None, "C:\\Users\\heesung\\Desktop\\media\\")
 
 
 '''
