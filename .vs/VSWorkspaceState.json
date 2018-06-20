@@ -1,6 +1,9 @@
 {
   "ExpandedNodes": [
-    "\\media"
+    "",
+    "\\media",
+    "\\static"
   ],
+  "SelectedNode": "\\static\\index.html",
   "PreviewInSolutionExplorer": false
 }

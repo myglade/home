@@ -4,7 +4,7 @@ import sqlite3
 import config
 from media import Media
 
-from pymysql.err import *
+#from pymysql.err import *
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 from sqlalchemy import *

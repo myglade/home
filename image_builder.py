@@ -26,13 +26,12 @@ Youtube : in general, vbv-maxrate=5000
 
 import config
 import datetime
-import imagelist
 from shutil import copyfile
 import decimal
 import logging
+import os
 import piexif
 from PIL import Image
-import os
 
 
 log = logging.getLogger(config.logname)
@@ -46,13 +45,6 @@ MEDIA_IMG = 0
 MEDIA_VIDEO = 1
 
 ENCODER = 'HandBrakeCLI.exe -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize={bufsize}:vbv-maxrate={rate} --width 1280 --height 720'
-
-class ImageInfo(object):
-    def __init__(self, path, date, loc, rotate_flag):
-        self.date = date
-        self.loc = loc
-        self.path = path
-        self.rotate_flag = rotate_flag
 
 class ImageBuilder(object):
     DEFAULT_SIZE = (1920, 1080)
@@ -71,6 +63,7 @@ class ImageBuilder(object):
         self.image_type = ['jpg', 'gif', 'png', 'tiff']
         self.video_type = ['avi', 'm2ts', 'mp4', 'mov']
 
+        self.video_overwrite = config.get("video_overwrite")
         self.db = None
 
     def get_info(self, name, ext):
@@ -156,15 +149,18 @@ class ImageBuilder(object):
         img = Image.open(src)
           
         exif_bytes = None
-        if "exif" in img.info:
-            exif_dict = piexif.load(img.info["exif"])
-            exif_bytes = piexif.dump(exif_dict)
-        
+        try:
+            if "exif" in img.info:
+                exif_dict = piexif.load(img.info["exif"])
+                exif_bytes = piexif.dump(exif_dict)
+        except Exception as e:
+            log.warning("Fail to get exif.  e=%s, src=%s, dst=%s", e, src, dst)
+
         width = img.size[0]
         height = img.size[1]
 
-        if img.size == size or (width < size[0] and height < size[1]):
-            copyfile(filename, new_filename)
+        if img.size == size or (width <= size[0] or height <= size[1]):
+            copyfile(src, dst)
             log.debug("file size is already small.  Just copy.  size=%s %s => %s",
                       size, src, dst)
             return
@@ -179,7 +175,10 @@ class ImageBuilder(object):
         img = img.resize((w, h), Image.ANTIALIAS)
         
         try:
-            img.save(dst, exif=exif_bytes) 
+            if exif_bytes:
+                img.save(dst, exif=exif_bytes) 
+            else:
+                img.save(dst)
         except Exception as e:
             log.error("Fail to resize %s.  e=%s", src, e.message)
 
@@ -189,11 +188,21 @@ class ImageBuilder(object):
     def convert_image(self, src, name, ext, stinfo):
         log.info("start convert image. src=%s, name=%s, ext=%s",
                  src, name, ext)
+
+        date = None
+        loc = None
+
+        d = datetime.datetime.fromtimestamp(stinfo.st_mtime)
+        year = d.strftime('%Y')
+        mon = d.strftime('%m')
+
         try:
             date, loc = self.get_info(src, ext)
         except Exception as e:
-            log.warn("%s", e)
-         
+            log.warn("fail to getinfo e=%s, src=%s", e, src)
+            date = year + ":" + mon
+
+        modify_flag = 0
         try:
             self.rotate_jpeg(src)
 
@@ -205,8 +214,29 @@ class ImageBuilder(object):
             log.error("Fail to adjust rotation %s. e-%s", src, e)
             modify_flag += MODIFY_ROTATE_FAIL
 
-        temp = date.split(':')
-        rel_path =  os.path.join(temp[0], temp[1])
+        if not date:
+            date = year + ":" + mon
+        t = date
+        for i in range(len(date)):
+            if date[i] == ' ':
+                t = date[:i]
+                break
+
+        temp = None
+        if t.find(':') != -1:
+            temp = t.split(':')
+        elif t.find('.') != -1:
+            temp = t.split('.')
+        elif t.find('/') != -1:
+            temp = t.split('/')
+
+        if not temp or year != temp[0]:
+            log.warn("year : %s <> picture info : %s", year, temp[0])
+        else:
+            year = temp[0]
+            mon = temp[1]
+
+        rel_path =  os.path.join(year, mon)
         dst_path = os.path.join(self.image_path, rel_path)
 
         # resize to default 
@@ -239,9 +269,10 @@ class ImageBuilder(object):
         if self.db:
             date = str(datetime.datetime.fromtimestamp(stinfo.st_mtime))
             self.db.put(filename, 
-                        rel_path, 
+                        os.path.join(rel_path, filename), 
                         date,
                         MEDIA_IMG,
+                        ext,
                         loc, 
                         modify_flag)
 
@@ -260,7 +291,7 @@ class ImageBuilder(object):
 
         if ext == 'avi' or ext == 'm2ts':
             # if already converted to mp4, skip it
-            temp = name + ".mp4"
+            temp = src + ".mp4"
             if os.path.exists(temp):
                 log.info("%s already exists", temp)
                 return
@@ -270,33 +301,36 @@ class ImageBuilder(object):
 
         dst = os.path.join(dst_path, name + ".mp4")
 
-        input = { "in":src, 
-                 "out":dst, 
-                 "rate": self.rate, 
-                 "bufsize":self.rate*2 }
+        if not os.path.exists(dst) or self.video_overwrite:
+            input = { "in":src, 
+                     "out":dst, 
+                     "rate": self.rate, 
+                     "bufsize":self.rate*2 }
 
-        cmd = ENCODER.format(**input)
+            cmd = ENCODER.format(**input)
 
-        log.debug(cmd) 
-        log.debug("*******************************************************")
-        r = os.system(cmd)
-        log.debug("*******************************************************")
-        if r != 0:
-            log.error("Fail! convert video. src=%s, name=%s, ext=%s", 
-                      src, name, ext)
+            log.debug(cmd) 
+            log.debug("*******************************************************")
+            r = os.system(cmd)
+            log.debug("*******************************************************")
+            if r != 0:
+                log.error("Fail! convert video. src=%s, name=%s, ext=%s", 
+                          src, name, ext)
 
-            if os.path.exists(dst):
-                os.remove(dst)
-            return
+                if os.path.exists(dst):
+                    os.remove(dst)
+                return
 
-        log.info("convert: %s", dst)
-        os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
+            log.info("convert: %s", dst)
+            os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
 
         if self.db:
-            self.db.put(name + ".mp4", 
-                        rel_path, 
+            filename = name + ".mp4"
+            self.db.put(filename, 
+                        os.path.join(rel_path, filename), 
                         str(d),
                         MEDIA_VIDEO,
+                        ext,
                         None, 
                         0)
 
@@ -306,10 +340,15 @@ class ImageBuilder(object):
     def process(self, src, name, ext, media_type):
         stinfo = os.stat(src)
 
-        if media_type == MEDIA_VIDEO:
-            self.convert_video(src, name, ext, stinfo)
-        else:
-            self.convert_image(src, name, ext, stinfo)
+        try:
+            if media_type == MEDIA_VIDEO:
+                self.convert_video(src, name, ext, stinfo)
+            else:
+                self.convert_image(src, name, ext, stinfo)
+        except Exception as e:
+            log.error("error. e=%s. src=%s", e, src)
+            print e
+
  
 
     def scan(self, scan_path):   
@@ -350,8 +389,13 @@ if __name__ == "__main__":
    # info.resize("C:\\Users\\heesung\\Desktop\\media\\1.JPG", (1920, 1080), 
    #             "C:\\Users\\heesung\\Desktop\\media\\1920\\1.JPG")
     b = ImageBuilder()
-    #b.process("C:\\Users\\heesung\\Desktop\\media\\1.JPG", "jpg", 0)
-    b.start(None, "C:\\Users\\heesung\\Desktop\\media\\")
+    
+    b.process("e:\\temp\\2014-1\\IMG_20140101_0005.jpg","IMG_20140101_0005", "jpg", 0)
+    b.process("y:\\Pictures\\2011-2\\IMG_0402.jpg","IMG_0402", "jpg", 0)
+    b.process("y:\\Pictures\\2011-1\\IMG_0013.jpg","SNC13036", "jpg", 0)
+    b.process("y:\\Pictures\\2009-1\\SNC13036.jpg","SNC13036", "jpg", 0)
+    b.process("y:\\Pictures\\2008\\Diane_Erin 001-ANIMATION.gif","Diane_Erin 001-ANIMATION", "gif", 0)
+    #b.start(None, "C:\\Users\\heesung\\Desktop\\media\\")
 
 
 '''

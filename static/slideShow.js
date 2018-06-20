@@ -216,7 +216,7 @@ function slideShow() {
         images.imageDescObjects.push(desc);
 
         desc.style.position = "absolute";
-        desc.style.top = (size.h - 100) + "px";
+        desc.style.top = (size.h - 50) + "px";
         desc.style.left = 10 + "px";
     }
 
@@ -674,24 +674,66 @@ function slideShow() {
         var currentSlideOpacity = 1; // Fade the current slide out.
         var nextSlideOpacity = 0; // Fade the next slide in.
         var opacityLevelIncrement = 1 / images.fadeDelay;
-        var fadeActiveSlidesID = setInterval(fadeActiveSlides, images.fadeDelay);
+        var fadeActiveSlidesID = setInterval(fadeActiveSlides, 100);
+        var fadeout = 0.1; //10.0 * opacityLevelIncrement;
+        var fadein = 0.1;//10.0 * opacityLevelIncrement;
 
         function fadeActiveSlides() {
-            currentSlideOpacity -= opacityLevelIncrement;
-            nextSlideOpacity += opacityLevelIncrement;
+            var type = 1;
 
-            if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
-                curMediaContainer.style.opacity = currentSlideOpacity;
-                nextMediaContainer.style.opacity = nextSlideOpacity;
+            if (type == 0) {
+                if (currentSlideOpacity > 0) {
+                    currentSlideOpacity -= fadeout;
+                    curMediaContainer.style.opacity = currentSlideOpacity;
+                }
+                else if (nextSlideOpacity < 1) {
+                    nextSlideOpacity += fadein;
+                    nextMediaContainer.style.opacity = nextSlideOpacity;
+                }
+                else {
+                    if (curMediaContainer.style)
+                        curMediaContainer.style.opacity = 0;
+                    nextMediaContainer.style.opacity = 1;
+                    clearInterval(fadeActiveSlidesID);
+
+                    completeTransition(curMediaContainer, nextMediaContainer);
+
+                }
             }
             else {
-                if (curMediaContainer.style)
-                    curMediaContainer.style.opacity = 0;
-                nextMediaContainer.style.opacity = 1;
-                clearInterval(fadeActiveSlidesID);
+                currentSlideOpacity -= fadeout;
+                nextSlideOpacity += fadeout;
 
-                completeTransition(curMediaContainer, nextMediaContainer);
+                if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
+                    curMediaContainer.style.opacity = currentSlideOpacity;
+                    nextMediaContainer.style.opacity = nextSlideOpacity;
+                }
+                else {
+                    if (curMediaContainer.style)
+                        curMediaContainer.style.opacity = 0;
+                    nextMediaContainer.style.opacity = 1;
+                    clearInterval(fadeActiveSlidesID);
+
+                    completeTransition(curMediaContainer, nextMediaContainer);
+                }
             }
+            /*		
+                    if (currentSlideOpacity >= 0 && nextSlideOpacity <= 1) {
+                        curMediaContainer.style.opacity = currentSlideOpacity;
+                        if (currentSlideOpacity <= 0.5)
+                            nextMediaContainer.style.opacity = nextSlideOpacity;
+                    //    nextMediaContainer.style.opacity = nextSlideOpacity;
+                    }
+                    else {
+                        if (curMediaContainer.style)
+                            curMediaContainer.style.opacity = 0;
+                        nextMediaContainer.style.opacity = 1;
+                        clearInterval(fadeActiveSlidesID);
+        
+                        completeTransition(curMediaContainer, nextMediaContainer);
+                    }
+                    */
+
         } // fadeActiveSlides
     }
 

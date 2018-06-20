@@ -1,0 +1,21 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "python",
+      "interpreter": "(default)",
+      "interpreterArguments": "",
+      "scriptArguments": "",
+      "nativeDebug": false,
+      "webBrowserUrl": "",
+      "project": "web.py",
+      "name": "web.py"
+    },
+    {
+      "type": "native",
+      "name": "web.py(1)",
+      "project": "web.py"
+    }
+  ]
+}

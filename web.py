@@ -14,9 +14,9 @@ app = Flask(__name__,
             static_url_path='',
             template_folder='static')
 
-import config
-import datetime
 import image_manager
+import datetime
+import config
 import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -105,6 +105,8 @@ def is_port_used(port):
     return False
 
 if __name__ == "__main__":
+    if not os.path.exists("log"):
+        os.makedirs("log")
     logging.basicConfig(filename="log\\ss.log", level=logging.DEBUG,
                     format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 

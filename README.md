@@ -1,5 +1,11 @@
 # home
 
+ run set PYTHONIOENCODING=UTF-8   in windows 
+
+ pip install win-unicode-console
+
+
+
 Prerequisite
 
 pip install piexif
@@ -18,6 +24,7 @@ pip install flask
 
 pip install SQLAlchemy
 
+pip install protobuf
 
 x pip install PyMySQL
 https://github.com/PyMySQL/PyMySQL

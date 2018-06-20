@@ -1,3 +1,4 @@
+import config
 import datetime
 import logging
 import os
@@ -5,12 +6,9 @@ import time
 
 from sqlalchemy.exc import InterfaceError
 
-import config
 from db import Db
-from imagelist import Imagelist
 from gps_db import GpsDb
 from image_db import ImageDb
-import image_builder
 
 '''
 https://wiki.gnome.org/Projects/gexiv2
@@ -105,6 +103,8 @@ class ImageManager(object):
        return img
 
     def build_imagedb(self, reset, restart_cron=False):
+        import image_builder
+
         if not self.path:
             log.error("path is not set")
             return
