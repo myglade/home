@@ -218,7 +218,7 @@ function slideShow() {
         images.imageDescObjects.push(desc);
 
         desc.style.position = "absolute";
-        desc.style.top = (size.h - 100) + "px";
+        desc.style.top = (size.h - 50) + "px";
         desc.style.left = 10 + "px";
 
         var info = div.querySelectorAll('div')[0];
