@@ -22,6 +22,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import socket
 import sys
+import weather
 
 log = logging.getLogger(config.logname)
 
@@ -40,11 +41,20 @@ def next_image():
     start_date = request.args.get('date')
     media = request.args.get('media')
     cur_id = request.args.get('curid')
+    quality = config.get("quality")
 
     if not request.remote_addr.startswith("192.168.") and \
         not request.remote_addr.startswith("127.0.0."):
-        log.info("not local network.  Disable video service")
-        media = "image"
+        #log.info("not local network.  Disable video service")
+        #media = "image"
+        quality = config.get("quality_remote")
+
+    if quality == 0:
+        quality_str = "320/"
+    elif quality == 1:
+        quality_str = "1280/"
+    else:
+        quality_str = ""
 
     if id:
         img = image_manager.get_newimage(id, media)
@@ -56,6 +66,11 @@ def next_image():
     img['path'] = "%s/%s" % (config.get("web_media_path"), 
                              img['path'].replace(os.path.sep, '/'))
 
+    if img['media_type'] == 'image':
+        s = img['path']
+        i = s.rfind("/")
+        img['path'] = s[:i+1] + quality_str + s[i+1:]
+    
     log.debug("oid=%s, id=%s, start_date=%s, media=%s, ip=%s", 
               id, img['id'], start_date, media, request.remote_addr)
 
@@ -78,6 +93,8 @@ def next_image():
 
     img['slide_delay'] = config.get("slide_delay")
     img['fade_delay'] = config.get("fade_delay")
+
+    weather.get_weather_info(img)
 
     s = jsonify(img)
     s.headers.add('Access-Control-Allow-Origin', '*')
@@ -127,6 +144,7 @@ if __name__ == "__main__":
         log.error("port is being used.  Quit")
         sys.exit(0)
 
+    weather.start()
     app.run(host= '0.0.0.0', port=port, threaded=True)
 
 

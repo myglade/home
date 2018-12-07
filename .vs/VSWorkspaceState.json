@@ -2,8 +2,8 @@
   "ExpandedNodes": [
     "",
     "\\media",
-    "\\static"
+    "\\static\\icon"
   ],
-  "SelectedNode": "\\static\\index.html",
+  "SelectedNode": "\\.weather.json",
   "PreviewInSolutionExplorer": false
 }

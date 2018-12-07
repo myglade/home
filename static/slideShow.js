@@ -14,6 +14,7 @@
 */
 IMAGE_ID = "image_id";
 DESC_ID = "imageDesc";
+INFO_ID = "info";
 SLIDE_DELAY = "slideDelay";
 FADE_DELAY = "fadeDelay";
 VIDEO_VOLUME = "video_volume";
@@ -44,6 +45,7 @@ var images = {
 
     imageObjects: [],
     imageDescObjects: [],
+    infoObjects: [],
     width: 0,
     height: 0,
     queue: [],
@@ -216,8 +218,17 @@ function slideShow() {
         images.imageDescObjects.push(desc);
 
         desc.style.position = "absolute";
-        desc.style.top = (size.h - 50) + "px";
+        desc.style.top = (size.h - 100) + "px";
         desc.style.left = 10 + "px";
+
+        var info = div.querySelectorAll('div')[0];
+        images.infoObjects.push(info);
+
+        info.style.position = "absolute";
+ //       info.style.top = (size.h - 105) + "px";
+        info.style.top = 10 + "px";
+        info.style.left = (size.w - 210) + "px";
+
     }
 
     //   console.log(images.descObject);
@@ -653,6 +664,26 @@ function slideShow() {
         else {
             images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"];
         }
+
+        var info_template = `
+        <span class="day">
+            <span><img src="/icon/{0}.png" class ="skycon" /></span>
+            <span> </span>
+            <div class ="label">
+                <div class ="temp">
+                    <span>{1}</span>
+                    <span class ="unitwrap">°F</span>
+                </div>
+                <span class ="maxmin">{2}°/{3}°</span>
+            </div>
+        </span>
+        `;
+        weather = nextMedia.obj["weather"]
+        info = info_template.format(weather["cur_icon"],
+                                weather["cur_temperature"], weather["daily_max"], weather["daily_min"]);
+
+
+        images.infoObjects[1 - images.curIndex].innerHTML = info;
 
         // get current image
         curMediaContainer = images.imageObjects[images.curIndex];

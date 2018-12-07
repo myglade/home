@@ -140,5 +140,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
     
-    mgr = ImageManager("static\\media\\")
+    #mgr = ImageManager("static\\media\\")
     print "done"

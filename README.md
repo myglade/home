@@ -26,6 +26,10 @@ pip install SQLAlchemy
 
 pip install protobuf
 
+pip install schedule
+
+pip install requests
+
 x pip install PyMySQL
 https://github.com/PyMySQL/PyMySQL
 

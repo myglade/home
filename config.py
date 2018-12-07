@@ -9,6 +9,7 @@ logname = "slideshow"
 log = logging.getLogger("slideshow")
 
 ##########################################
+## quality : 0, 1, 2 (high)
 
 conf_data = {
     "image_db": "image.sqlite",
@@ -20,8 +21,9 @@ conf_data = {
     "fade_delay": 50,
     "video_overwrite" : False,
     "desc_format": "%s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + \
-                   "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s"
-
+                   "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s",
+    "quality": 2,
+    "quality_remote": 1
     }
 
 ##########################################
