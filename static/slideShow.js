@@ -227,7 +227,7 @@ function slideShow() {
         info.style.position = "absolute";
  //       info.style.top = (size.h - 105) + "px";
         info.style.top = 10 + "px";
-        info.style.left = (size.w - 210) + "px";
+        info.style.left = (size.w - 220) + "px";
 
     }
 
@@ -667,8 +667,9 @@ function slideShow() {
 
         var info_template = `
         <span class="day">
-            <span><img src="/icon/{0}.png" class ="skycon" /></span>
-            <span> </span>
+            <span>
+                <canvas id="{0}_{4}" class="skycon" width="80px" height="80px"></canvas>
+            </span>
             <div class ="label">
                 <div class ="temp">
                     <span>{1}</span>
@@ -678,12 +679,32 @@ function slideShow() {
             </div>
         </span>
         `;
-        weather = nextMedia.obj["weather"]
-        info = info_template.format(weather["cur_icon"],
-                                weather["cur_temperature"], weather["daily_max"], weather["daily_min"]);
 
+        weather = nextMedia.obj["weather"]
+        weather["cur_icon"] = "wind";
+        info = info_template.format(weather["cur_icon"],
+                                weather["cur_temperature"], weather["daily_max"], weather["daily_min"],
+                                1 - images.curIndex);
+
+        var ele = images.infoObjects[1 - images.curIndex];
 
         images.infoObjects[1 - images.curIndex].innerHTML = info;
+        var icons = new Skycons({ color: "white" }),
+            list = [
+                "clear-day", "clear-night", "partly-cloudy-day",
+                "partly-cloudy-night", "cloudy", "rain", "sleet", "snow", "wind",
+                "fog"
+            ],
+            i;
+
+        for (i = list.length; i--;)
+            icons.set(list[i] + "_" + String(1 - images.curIndex), list[i]);
+
+        icons.play();
+
+//        var scriptNode = document.createElement('script');
+//        scriptNode.innerHTML = info_script;
+ //       images.infoObjects[1 - images.curIndex].appendChild(scriptNode);
 
         // get current image
         curMediaContainer = images.imageObjects[images.curIndex];
