@@ -225,7 +225,7 @@ function slideShow() {
         images.infoObjects.push(info);
 
         info.style.position = "absolute";
- //       info.style.top = (size.h - 105) + "px";
+        //       info.style.top = (size.h - 105) + "px";
         info.style.top = 10 + "px";
         info.style.left = (size.w - 220) + "px";
 
@@ -681,8 +681,8 @@ function slideShow() {
         `;
 
         weather = nextMedia.obj["weather"]
-//        weather["cur_icon"] = "wind";
-        info = info_template.format(weather["cur_icon"],
+        //        weather["cur_icon"] = "wind";
+        info = info_template.format(weather["icon"],
                                 weather["cur_temperature"], weather["daily_max"], weather["daily_min"],
                                 1 - images.curIndex);
 
@@ -702,9 +702,9 @@ function slideShow() {
 
         icons.play();
 
-//        var scriptNode = document.createElement('script');
-//        scriptNode.innerHTML = info_script;
- //       images.infoObjects[1 - images.curIndex].appendChild(scriptNode);
+        //        var scriptNode = document.createElement('script');
+        //        scriptNode.innerHTML = info_script;
+        //       images.infoObjects[1 - images.curIndex].appendChild(scriptNode);
 
         // get current image
         curMediaContainer = images.imageObjects[images.curIndex];

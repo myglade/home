@@ -15,6 +15,8 @@ https://darksky.net/dev/account
 
 86694a53b9db9c37a58ca1ceecfd8c20
 
+http://darkskyapp.github.io/skycons/
+
 https://api.darksky.net/forecast/86694a53b9db9c37a58ca1ceecfd8c20/37.3472892,-121.9840828?exclude=minutely,hourly,alerts,flags
 
 '''
@@ -71,7 +73,9 @@ def update_weather_info():
             "timezone": s["timezone"],
             "cur_time" : get_localtime(s["currently"]["time"]),
             "cur_temperature": int(s["currently"]["temperature"]),
-            "cur_icon": s["currently"]["icon"],
+#            "icon": s["currently"]["icon"],
+#            "icon": s["daily"]["data"][0]["icon"],
+			"icon": s["daily"]["icon"],
             "daily_max": int(s["daily"]["data"][0]["temperatureHigh"]),
             "daily_min": int(s["daily"]["data"][0]["temperatureLow"]),
             "daily_summary" : s["daily"]["data"][0]["summary"]
