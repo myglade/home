@@ -681,7 +681,7 @@ function slideShow() {
         `;
 
         weather = nextMedia.obj["weather"]
-        weather["cur_icon"] = "wind";
+//        weather["cur_icon"] = "wind";
         info = info_template.format(weather["cur_icon"],
                                 weather["cur_temperature"], weather["daily_max"], weather["daily_min"],
                                 1 - images.curIndex);

@@ -23,7 +23,8 @@ conf_data = {
     "desc_format": "%s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + \
                    "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s",
     "quality": 2,
-    "quality_remote": 1
+    "quality_remote": 1,
+    "weather_update": 15
     }
 
 ##########################################

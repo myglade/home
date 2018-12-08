@@ -144,7 +144,7 @@ if __name__ == "__main__":
         log.error("port is being used.  Quit")
         sys.exit(0)
 
-    weather.start()
+    weather.start(int(config.get("weather_update")))
     app.run(host= '0.0.0.0', port=port, threaded=True)
 
 

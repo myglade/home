@@ -95,9 +95,9 @@ def run():
         time.sleep(1)
 
 
-def start(min=30):
-    if min <= 0:
-        min = 30
+def start(min=15):
+    if min < 10 or min > 60:
+        min = 15
     
     g_stop = False
     update_weather_info()
