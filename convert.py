@@ -4,6 +4,7 @@ import logging
 import os
 from datetime import timedelta
 import time
+import shutil
 
 log = logging.getLogger(config.logname)
 
@@ -19,6 +20,7 @@ Youtube : in general, vbv-maxrate=5000
 
 '''
 ENCODER = 'HandBrakeCLI.exe -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize={bufsize}:vbv-maxrate={rate} --width 1280 --height 720'
+ENCODER2 = 'HandBrakeCLI.exe -i {in} -o {out} --preset-import-file heesung_encode.json --preset "heesung"'
 
 def convert(src, dst_path, rate=4000):   
     video_type = ['avi', 'm2ts', 'mp4', 'mov']
@@ -42,7 +44,7 @@ def convert(src, dst_path, rate=4000):
     filename, ext = os.path.splitext(os.path.basename(src))
     dst = os.path.join(dst_path, filename + ".mp4")
 
-    input = { "in":src, "out":dst, "rate": rate, "bufsize":rate*2 }
+    input = { "in":src, "out":dst }
     cmd = ENCODER.format(**input)
     print cmd
     log.debug(cmd) 
@@ -58,6 +60,9 @@ def convert(src, dst_path, rate=4000):
     os.utime(dst, (origin_atime, origin_mtime))
 
     log.info("convert: %s", dst)
+
+
+
 
 def fix(path):
     for root, dirs, files in os.walk(unicode(path)):
@@ -91,6 +96,104 @@ def fix(path):
 
     print "done"
 
+
+def reencode(src, dst):   
+    stinfo = os.stat(src)
+    origin_mtime = stinfo.st_mtime
+    origin_atime = stinfo.st_atime
+
+    input = { "in":src, "out":dst}
+    cmd = ENCODER2.format(**input)
+    print cmd
+    log.debug(cmd) 
+    log.debug("*******************************************************")
+    r = os.system(cmd)
+    log.debug("*******************************************************")
+    if r != 0:
+        log.error("FAIL!  %s", src)
+        if os.path.exists(dst):
+            os.remove(dst)
+        return
+
+    os.utime(dst, (origin_atime, origin_mtime))
+
+    log.info("convert: %s", dst)
+
+
+def scan(scan_path):   
+    log.info("start scan")
+    extList = ["mp4"] 
+
+    total = 0
+    for root, dirs, files in os.walk(unicode(scan_path)):
+        for file in files:
+            filename, ext = os.path.splitext(file)
+            ext = ext[1:].lower()
+            if ext not in extList or filename.startswith("~"):
+                continue
+
+            src = os.path.join(root, file)
+            dst = os.path.join(root, "~" + file)
+            print src, " => ", dst
+            total += 1
+        #    continue
+            reencode(src, dst)
+      #      os.remove(src)
+      #      os.rename(dst, src)
+
+    print total
+
+def remove(scan_path):   
+    log.info("start scan")
+    extList = ["mp4"] 
+
+    total = 0
+    for root, dirs, files in os.walk(unicode(scan_path)):
+        for file in files:
+            filename, ext = os.path.splitext(file)
+            ext = ext[1:].lower()
+            if ext not in extList or not filename.startswith("~"):
+                continue
+
+            src = os.path.join(root, file)
+            dst = os.path.join(root, file[1:])
+            print src, " => ", dst
+#            if not os.path.exists(dst):
+#                print "error =====>" + dst
+            total += 1
+#            os.remove(dst)
+#            os.rename(src, dst)
+
+    print total
+
+def copy(scan_path):   
+    log.info("start scan")
+    extList = ["mp4"] 
+
+    total = 0
+    for root, dirs, files in os.walk(unicode(scan_path)):
+        for file in files:
+            filename, ext = os.path.splitext(file)
+            ext = ext[1:].lower()
+            if ext not in extList:
+                continue
+
+            src = os.path.join(root, file)
+            dst = src.replace(scan_path, "Y:\\Amazon Drive\\images")
+            if not os.path.exists(dst):
+                print "error =====>" + dst
+            print src, " => ", dst
+            shutil.copy2(src, dst)
+            total += 1
+        #    continue
+      #      os.remove(src)
+      #      os.rename(dst, src)
+
+    print total
 if __name__ == "__main__":
-    convert("C:\\Users\\heesung\\Desktop\\media\\IMG_8638.MOV",
-            "C:\\Users\\heesung\\Desktop\\media\\movie")
+#    scan("D:\\Project\\home")
+#    remove("D:\\Project\\home")
+#    scan("D:\\images")
+     copy("D:\\images")
+    #convert("C:\\Users\\heesung\\Desktop\\media\\IMG_8638.MOV",
+    #        "C:\\Users\\heesung\\Desktop\\media\\movie")
