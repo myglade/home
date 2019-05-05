@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\media"
+    "\\media",
+    "\\static"
   ],
-  "SelectedNode": "\\convert.py",
+  "SelectedNode": "\\image_manager.py",
   "PreviewInSolutionExplorer": false
 }

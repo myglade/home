@@ -32,6 +32,16 @@ MEDIA = "media";
 IMAGE1 = "slideimage0";
 IMAGE2 = "slideimage1";
 
+String.prototype.format = function () {
+    var s = this,
+        i = arguments.length;
+
+    while (i--) {
+        s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arguments[i]);
+    }
+    return s;
+};
+
 /* GLOBALS **********************************************************************************************/
 
 var images = {
@@ -58,7 +68,8 @@ var images = {
     start: false,
     debug: false,
     cur_id: null,
-    monitor: null
+    monitor: null,
+    total: 0
 }
 
 function createCookie(name, value, days) {
@@ -218,7 +229,7 @@ function slideShow() {
         images.imageDescObjects.push(desc);
 
         desc.style.position = "absolute";
-        desc.style.top = (size.h - 50) + "px";
+        desc.style.top = (size.h - 60) + "px";
         desc.style.left = 10 + "px";
 
         var info = div.querySelectorAll('div')[0];
@@ -243,6 +254,7 @@ function slideShow() {
         //    id = images.cur_id;
     }
 
+
     images.slideDelay = readCookie(SLIDE_DELAY, images.slideDelay);
     images.fadeDelay = readCookie(FADE_DELAY, images.fadeDelay);
     images.media = readCookie(MEDIA, images.media);
@@ -257,6 +269,7 @@ function slideShow() {
 
     var url = "http://{0}/{1}".format(window.location.host, images.url);
 
+    console.log("id=%d, query=%s", id, images.lastQuery);
     console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
     fillImages(url, id, images.queue, images.maxQueueSize);
 
@@ -303,7 +316,7 @@ function slideShow() {
     function fillImages(url, id, queue, maxQueueSize) {
         var query;
 
-        console.log("call fillImages, id=%s", id);
+//        console.log("call fillImages, id=%s", id);
 
         if (images.start) {
             console.log("show already start. Get next of [%s]. queue=%s", id, queue.length)
@@ -314,7 +327,7 @@ function slideShow() {
             completeImagesLoading();
             return;
         }
-        console.log("call fillImages 2, id=%s", id);
+//        console.log("call fillImages 2, id=%s", id);
 
         //console.log("1. url={0} id={1} queue size={2}".format(url, id, queue.length));
 
@@ -387,6 +400,7 @@ function slideShow() {
         }
 
         query = "{0}?id={1}&media={2}".format(url, id, images.media);
+        console.log("images.dateQuery=%s", images.dateQuery);
 
         if (images.dateQuery == null || images.dateQuery == "") {
             if (queue.length == 0 && (images.cur_id || images.lastQuery)) {
@@ -409,6 +423,7 @@ function slideShow() {
             query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
             images.dateQuery = null;
         }
+        console.log("query=%s", query);
 
         xmlhttp.open("GET", query, true);
         xmlhttp.timeout = 10000;
@@ -658,27 +673,28 @@ function slideShow() {
         mediaElement = nextMediaContainer.querySelectorAll(nextMediaContainer.media_type)[0];
         adjustImage(mediaElement, { w: images.width, h: images.height });
 
+        images.total += 1;
+
         if (images.debug) {
-            images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"] + " " + nextMedia.obj["id"] + " " + nextMedia.obj["path"]
+            images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"] + " " + nextMedia.obj["id"] + " " + nextMedia.obj["path"] + " " + images.total;
         }
         else {
             images.imageDescObjects[1 - images.curIndex].innerHTML = nextMedia.obj["desc"];
         }
 
-        var info_template = `
-        <span class="day">
-            <span>
-                <canvas id="{0}_{4}" class="skycon" width="80px" height="80px"></canvas>
-            </span>
-            <div class ="label">
-                <div class ="temp">
-                    <span>{1}</span>
-                    <span class ="unitwrap">°F</span>
-                </div>
-                <span class ="maxmin">{2}°/{3}°</span>
-            </div>
-        </span>
-        `;
+        var info_template = "\
+        <span class=\"day\">\
+            <span>\
+                <canvas id=\"{0}_{4}\" class=\"skycon\" width=\"80px\" height=\"80px\"></canvas>\
+            </span>\
+            <div class =\"label\">\
+                <div class =\"temp\">\
+                    <span>{1}</span>\
+                    <span class =\"unitwrap\">°F</span>\
+                </div>\
+                <span class =\"maxmin\">{2}°/{3}°</span>\
+            </div>\
+        </span>";
 
         weather = nextMedia.obj["weather"]
         //        weather["cur_icon"] = "wind";
@@ -725,10 +741,12 @@ function slideShow() {
 
         var currentSlideOpacity = 1; // Fade the current slide out.
         var nextSlideOpacity = 0; // Fade the next slide in.
-        var opacityLevelIncrement = 1 / images.fadeDelay;
+        var opacityLevelIncrement = 1 / 100;//images.fadeDelay;
         var fadeActiveSlidesID = setInterval(fadeActiveSlides, 100);
         var fadeout = 0.1; //10.0 * opacityLevelIncrement;
         var fadein = 0.1;//10.0 * opacityLevelIncrement;
+        var fadeout = 10.0 * opacityLevelIncrement;
+        var fadein = 10.0 * opacityLevelIncrement;
 
         function fadeActiveSlides() {
             var type = 1;
@@ -867,16 +885,42 @@ function onConfig() {
 
     // Get the <span> element that closes the modal
     var span = document.getElementsByClassName("close")[0];
-
     // When the user clicks the button, open the modal
     btn.onclick = function () {
         modal.style.display = "block";
         //document.config.volume.value = readCookie(VIDEO_VOLUME, "1");
+
+        if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) //IF IE > 10
+        {   
+            var today = new Date();
+            var dd = today.getDate();
+
+            var mm = today.getMonth() + 1;
+            var yyyy = today.getFullYear();
+            if (dd < 10) {
+                dd = '0' + dd;
+            }
+
+            if (mm < 10) {
+                mm = '0' + mm;
+            }
+            document.config.start.value = mm + '/' + dd + '/' + yyyy;
+        }
+        else {
+            document.config.start.value = "none";
+        }
         document.config.start.value = "none";
 
-        document.config.media.value = images.media;
+        for (i = 0; i < document.config.media.length; i++) {
+            if (document.config.media[i].value == images.media) {
+                document.config.media[i].checked = true;
+                break;
+            }
+        }
+        // document.config.media.value = images.media;
+        
         document.config.debug.checked = images.debug;
-        document.config.volume.value = images.videoVolume;
+        document.config.volume.value = images.videoVolume * 100;
     }
 
     // When the user clicks on <span> (x), close the modal
@@ -896,17 +940,36 @@ function onConfig() {
 function onSave() {
     var media = document.config.media;
 
-    if (document.config.start.value) {
+    if (document.config.start.value && document.config.start.value != "none") {
         images.dateQuery = document.config.start.value;
+        if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) //IF IE > 10
+        {   // 0123456789
+            // 05/16/2013
+            s = document.config.start.value;
+            images.dateQuery = s.substring(6) + "-" + s.substring(0, 2) + "-" + s.substring(3, 5);
+            alert(images.dateQuery);
+        }
         createCookie(START_DATE, images.dateQuery);
         eraseCookie(QUERY);
     }
 
-    images.videoVolume = document.config.volume.value;
-    if (document.config.media.value != images.media)
-        eraseCookie(QUERY);
+    vol = document.config.volume.value / 100.0;
+    images.videoVolume = vol;
 
-    images.media = document.config.media.value;
+    var media;
+    for (i = 0; i < document.config.media.length; i++) {
+        if (document.config.media[i].checked) {
+            media = document.config.media[i].value;
+            break;
+        }
+    }
+
+    if (media != images.media) {
+        eraseCookie(QUERY);
+    }
+
+    images.media = media;
+
     images.debug = document.config.debug.checked;
 
     createCookie(DEBUG, images.debug);

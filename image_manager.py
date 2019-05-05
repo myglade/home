@@ -91,7 +91,7 @@ class ImageManager(object):
 
        img = self.imagedb.get_next_by_date(start_date, media) 
        img['created'] = img['created'].strftime("%Y / %m / %d")
-
+       
        address = None
        try:
            address = self.gpsdb.get_location(img["loc"])
