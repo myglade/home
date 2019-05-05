@@ -1,9 +1,9 @@
 {
-    "cur_temperature": 73, 
-    "cur_time": "2019-05-04 23:20:09", 
+    "cur_temperature": 57, 
+    "cur_time": "2019-05-05 04:21:47", 
     "daily_max": 73, 
-    "daily_min": 48, 
-    "daily_summary": "Mostly cloudy until afternoon.", 
+    "daily_min": 49, 
+    "daily_summary": "Partly cloudy throughout the day.", 
     "icon": "clear-day", 
     "latitude": 37.3472892, 
     "longitude": -121.9840828, 
