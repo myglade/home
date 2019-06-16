@@ -35,7 +35,7 @@ IMAGE1 = "slideimage0";
 IMAGE2 = "slideimage1";
 
 DEFAULT_START_DATE = '2000-01-01';
-DEFAULT_END_DATE = '2999-12-31';
+DEFAULT_END_DATE = '2050-12-31';
 
 String.prototype.format = function () {
     var s = this,
