@@ -47,7 +47,7 @@ class ImageManager(object):
     def set_media_path(self, path):
         self.path = path
 
-    def get_newimage(self, id, media):
+    def get_newimage(self, id, media, startDate, endDate):
        if not id:
            id = -1
 
@@ -55,8 +55,7 @@ class ImageManager(object):
            id = -1
            self.reset = False
 
-       img = self.imagedb.get_next_by_id(id, media) 
-       img['created'] = img['created'].strftime("%Y / %m / %d")
+       img = self.imagedb.get_next_by_id(id, media, startDate, endDate) 
 
        address = None
        try:
@@ -68,12 +67,12 @@ class ImageManager(object):
 
        return img
 
-    def get_newimage_by_curid(self, id, media):
+
+    def get_newimage_by_curid(self, id, media, start_date, end_date):
        if not id:
            return self.get_newimage(-1, media)
 
-       img = self.imagedb.get_by_id(id, media) 
-       img['created'] = img['created'].strftime("%Y / %m / %d")
+       img = self.imagedb.get_by_id(id, media, start_date, end_date) 
 
        address = None
        try:
@@ -85,13 +84,12 @@ class ImageManager(object):
 
        return img
 
-    def get_newimage_by_date(self, start_date, media):
+    def get_newimage_by_date(self, set_date, media, start_date, end_date):
        if not start_date:
            return self.get_newimage(-1)
 
-       img = self.imagedb.get_next_by_date(start_date, media) 
-       img['created'] = img['created'].strftime("%Y / %m / %d")
-       
+       img = self.imagedb.get_next_by_date(set_date, media, start_date, end_date) 
+
        address = None
        try:
            address = self.gpsdb.get_location(img["loc"])
@@ -118,14 +116,15 @@ class ImageManager(object):
 
 image_mgr = ImageManager()
 
-def get_newimage(id, media):
-    return image_mgr.get_newimage(id, media)
+def get_newimage(id, media, start_date, end_date):
+    return image_mgr.get_newimage(id, media, start_date, end_date)
 
-def get_newimage_by_date(start_date, media):
-    return image_mgr.get_newimage_by_date(start_date, media)
+def get_newimage_by_date(set_date, media, start_date, end_date):
+    return image_mgr.get_newimage_by_date(set_date, media, start_date, end_date)
 
-def get_newimage_by_curid(cur_id, media):
-    return image_mgr.get_newimage_by_curid(cur_id, media)
+def get_newimage_by_curid(cur_id, media, start_date, end_date):
+    return image_mgr.get_newimage_by_curid(cur_id, media, start_date, end_date)
+
 
 def process(type):
     if type == "build":

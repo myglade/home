@@ -1,10 +1,10 @@
 {
-    "cur_temperature": 57, 
-    "cur_time": "2019-05-05 04:21:47", 
-    "daily_max": 73, 
-    "daily_min": 49, 
-    "daily_summary": "Partly cloudy throughout the day.", 
-    "icon": "clear-day", 
+    "cur_temperature": 66, 
+    "cur_time": "2019-06-16 02:07:14", 
+    "daily_max": 72, 
+    "daily_min": 55, 
+    "daily_summary": "Mostly cloudy throughout the day.", 
+    "icon": "partly-cloudy-day", 
     "latitude": 37.3472892, 
     "longitude": -121.9840828, 
     "timezone": "America/Los_Angeles"

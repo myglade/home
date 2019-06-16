@@ -38,7 +38,11 @@ def media_file(path):
 @app.route("/nextimage")
 def next_image():
     id = request.args.get('id')
-    start_date = request.args.get('date')
+    start_date = request.args.get('start')
+    end_date = request.args.get('end')
+
+    set_date = request.args.get('setdate')
+
     media = request.args.get('media')
     cur_id = request.args.get('curid')
     quality = config.get("quality")
@@ -56,12 +60,17 @@ def next_image():
     else:
         quality_str = ""
 
+    if start_date == 'none':
+        start_date = '1990-01-01'
+    if end_date == 'none':
+        end_date = '2999-01-01'
+
     if id:
-        img = image_manager.get_newimage(id, media)
-    elif start_date:
-        img = image_manager.get_newimage_by_date(start_date, media)
+        img = image_manager.get_newimage(id, media, start_date, end_date)
+    elif set_date:
+        img = image_manager.get_newimage_by_date(set_date, media, start_date, end_date)
     elif cur_id:
-        img = image_manager.get_newimage_by_curid(cur_id, media)
+        img = image_manager.get_newimage_by_curid(cur_id, media, start_date, end_date)
 
     img['path'] = "%s/%s" % (config.get("web_media_path"), 
                              img['path'].replace(os.path.sep, '/'))
@@ -71,10 +80,11 @@ def next_image():
         i = s.rfind("/")
         img['path'] = s[:i+1] + quality_str + s[i+1:]
     
-    log.debug("oid=%s, id=%s, start_date=%s, media=%s, ip=%s", 
-              id, img['id'], start_date, media, request.remote_addr)
+    log.debug("oid=%s, id=%s, start_date=%s, end_date=%s, media=%s, ip=%s", 
+              id, img['id'], start_date, end_date, media, request.remote_addr)
 
-    created_time = img['created']
+    created_time = img['created'].strftime("%Y / %m / %d")
+    img['created'] = img['created'].strftime("%Y-%m-%d")
 
     # address transformation
     addr = img['address']

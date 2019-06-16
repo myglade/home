@@ -101,9 +101,71 @@ class ImageDb(object):
 
         return r
 
-    def get_next_by_date(self, created, media_str):
+    def get_next_by_id(self, id, media_str, startDate, endDate):
         retry = 0
 
+        endDate = endDate + " 23:59:59"
+
+        media = self.to_media_value(media_str)
+        while True:
+            session = self.db.Session()
+            try:
+                """ find image with id.  start <= created <= end """
+                image = session.query(Image).\
+                    filter(Image.id == id).\
+                    filter(and_(Image.created >= startDate, Image.created <= endDate)).\
+                    filter(Image.media_type.in_(media)).first()
+
+                if image:
+                    created = image.created
+                    # find next one in the same date
+                    image = session.query(Image).\
+                            filter(and_(Image.id > id, Image.created == created)).\
+                            filter(Image.media_type.in_(media)).\
+                            order_by(Image.id).first()
+
+                    if image:
+                        return image.as_dict()
+                    else:
+                        # find next in the next day
+                        image = session.query(Image).\
+                                filter(created < Image.created).\
+                                filter(and_(Image.created >= startDate, Image.created <= endDate)).\
+                                filter(Image.media_type.in_(media)).\
+                                order_by(Image.created, Image.id).first()
+
+                        if image:
+                            return image.as_dict()
+                
+                # fail to find next one in date range.
+                # find the first one in date range
+                image = session.query(Image).\
+                        filter(and_(Image.created >= startDate, Image.created <= endDate)).\
+                        filter(Image.media_type.in_(media)).\
+                        order_by(Image.created, Image.id).first()
+
+                if image:
+                    return image.as_dict()
+
+                # no image in this range.  Now ignore date
+                return get_next_by_id(id, media_str)
+
+            except Exception as e:
+                log.error("get_next_by_time Error.  %s", e)
+                session.rollback()
+#                self.db.reset_session()
+                retry += 1
+                if retry > 3:
+                    log.error("db operation failure. quit")
+                    sys.exit(0)
+            finally:
+                self.db.Session.remove()
+
+
+    def get_next_by_date(self, created, media_str, startDate, endDate):
+        retry = 0
+
+        endDate = endDate + " 23:59:59"
         media = self.to_media_value(media_str)
         while True:
             session = self.db.Session()
@@ -130,62 +192,11 @@ class ImageDb(object):
             finally:
                 self.db.Session.remove()
 
-    def get_next_by_id(self, id, media_str):
+
+    def get_by_id(self, id, media_str, startDate, endDate):
         retry = 0
 
-        media = self.to_media_value(media_str)
-        while True:
-            session = self.db.Session()
-            try:
-                """ by time """
-                image = session.query(Image).\
-                    filter(Image.id == id).\
-                    filter(Image.media_type.in_(media)).first()
-
-                if not image:
-                    image = session.query(Image).\
-                            filter(Image.id == id).first()
-
-                    if not image:
-                        image = session.query(Image).filter(Image.media_type.in_(media)).order_by(Image.created).first()
-                        return image.as_dict()
-
-                created = image.created
-                image = session.query(Image).\
-                        filter(and_(Image.id > id, Image.created == created)).\
-                        filter(Image.media_type.in_(media)).\
-                        order_by(Image.id).first()
-
-                if image:
-                    return image.as_dict()
-
-                image = session.query(Image).\
-                        filter(Image.created > created).\
-                        filter(Image.media_type.in_(media)).\
-                        order_by(Image.created, Image.id).first()
-
-                if image:
-                    return image.as_dict()
-
-                image = session.query(Image).\
-                        filter(Image.media_type.in_(media)).\
-                        order_by(Image.created, Image.id).first()
-
-                return image.as_dict()
-            except Exception as e:
-                log.error("get_next_by_time Error.  %s", e)
-                session.rollback()
-#                self.db.reset_session()
-                retry += 1
-                if retry > 3:
-                    log.error("db operation failure. quit")
-                    sys.exit(0)
-            finally:
-                self.db.Session.remove()
-
-    def get_by_id(self, id, media_str):
-        retry = 0
-
+        endDate = endDate + " 23:59:59"
         media = self.to_media_value(media_str)
         while True:
             session = self.db.Session()
@@ -213,6 +224,10 @@ class ImageDb(object):
                     sys.exit(0)
             finally:
                 self.db.Session.remove()
+
+
+
+
 """
         self.execute("SELECT * FROM %s WHERE id=?" % self.table, (id,))
         row = self.cursor.fetchone()
@@ -253,25 +268,16 @@ if __name__ == "__main__":
     import image_builder
     from db import Db
 
-    image_info = image_info.ImageBuilder()
-
     db = Db()
     imagedb = ImageDb(db)
-    m = Media("media", "image")
-    media_list = m.scan()
-    for value in media_list.values():
-        for name in value.file_path.keys():
-            path = name
-            break
 
-        date, loc = image_info.get(path)
-        imagedb.put(value.fullname(), path, date, loc)
 
     id = -1
     for i in xrange(20):
-        image = imagedb.get_next_by_time(id)
+        image = imagedb.get_next_by_id(id, "both", "2017-10-12", 
+                                                     "2017-10-14")
         print "+++++++++++++++++++++++++++++", image
-        id = image.id
+        id = image["id"]
 
 '''
 {'loc': u'37.350078,-121.981169', 

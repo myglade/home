@@ -18,7 +18,9 @@ INFO_ID = "info";
 SLIDE_DELAY = "slideDelay";
 FADE_DELAY = "fadeDelay";
 VIDEO_VOLUME = "video_volume";
-START_DATE = "start_date";
+SET_DATE = "setDate";
+START_DATE = "starDate";
+END_DATE = "endDate";
 DEBUG = "debug";
 LAST_UPDATE_TIME = "last_update_time";
 LAST_UPDATE_ID = "last_update_id";
@@ -31,6 +33,9 @@ ALLOW_TIME = 2 * 60;
 MEDIA = "media";
 IMAGE1 = "slideimage0";
 IMAGE2 = "slideimage1";
+
+DEFAULT_START_DATE = '2000-01-01';
+DEFAULT_END_DATE = '2999-12-31';
 
 String.prototype.format = function () {
     var s = this,
@@ -63,6 +68,8 @@ var images = {
     maxQueueSize: 3,
     url: "nextimage",
     dateQuery: null,
+    startDate: null,
+    endDate:null,
     media: "both",
     videoVolume: "0.5",
     start: false,
@@ -124,14 +131,14 @@ function sleep(ms) {
 
 function set_last_update(id) {
     last_id = readCookie(LAST_UPDATE_ID, "");
-    console.log("***********************************");
-    console.log("last_id=%s, id=%s", last_id, id);
+//    console.log("***********************************");
+//    console.log("last_id=%s, id=%s", last_id, id);
 
     t = Math.floor(Date.now() / 1000);
     createCookie(LAST_UPDATE_TIME, t);
     createCookie(LAST_UPDATE_ID, id);
 
-    console.log("update checkpoint. id=%s t=%s", id, t);
+//    console.log("update checkpoint. id=%s t=%s", id, t);
 }
 
 function check_liveness() {
@@ -142,22 +149,22 @@ function check_liveness() {
     d = cur - last_time;
 
     if (d > ALLOW_TIME) {
-        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s. Skip id=%d RELOAD",
-            d, ALLOW_TIME, last_id);
+//        console.log("Page seems DEAD!!!!!!!!!!!!!!!!!!!!!!!!!. diff=%s ALLOW_TIME=%s. Skip id=%d RELOAD",
+//            d, ALLOW_TIME, last_id);
 
         createCookie(UPDATE_COUNT, 0);
         eraseCookie(QUERY);
         location.reload();
     }
     else {
-        console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s ",
-            d, ALLOW_TIME, last_id);
+ //       console.log("Page is alive!!!!!!!!!!!!.  diff=%d ALLOW_TIME=%s id=%s ",
+ //           d, ALLOW_TIME, last_id);
     }
 }
 
 function check_history(id) {
     obj_history = readCookie(HISTORY, "");
-    console.log("#######################   Current history = %s", obj_history);
+//    console.log("#######################   Current history = %s", obj_history);
 
     list = obj_history.split(',');
 
@@ -170,7 +177,7 @@ function check_history(id) {
     }
 
     if (count >= 3) {
-        console.log("#######################   Too many errors %s ", id);
+ //       console.log("#######################   Too many errors %s ", id);
         return false;
     }
 
@@ -179,7 +186,7 @@ function check_history(id) {
         list.shift();
 
     var r = list.join();
-    console.log("updated history = %s", r);
+ //   console.log("updated history = %s", r);
     createCookie(HISTORY, r);
 
     return true;
@@ -243,7 +250,7 @@ function slideShow() {
     }
 
     //   console.log(images.descObject);
-    console.log("READ COOKIE");
+//    console.log("READ COOKIE");
     var id = readCookie(IMAGE_ID, -1);
     //    id = 3483;
     //  id = 7824;
@@ -260,17 +267,28 @@ function slideShow() {
     images.media = readCookie(MEDIA, images.media);
     images.debug = JSON.parse(readCookie(DEBUG, images.debug));
     images.videoVolume = readCookie(VIDEO_VOLUME, images.videoVolume);
-    images.dateQuery = readCookie(START_DATE, "");
+    images.startDate = readCookie(START_DATE, DEFAULT_START_DATE);
+    images.endDate = readCookie(END_DATE, DEFAULT_END_DATE);
     images.lastQuery = readCookie(QUERY, "");
+    images.dateQuery = readCookie(SET_DATE, "");
+
+    if (images.startDate == '')
+        images.startDate = DEFAULT_START_DATE;
+    if (images.endDate == '')
+        images.endDate = DEFAULT_END_DATE;
+
+    console.log("startDate=%s endDate=%s lastQuery=%s ", images.startDate,
+        images.endDate, images.lastQuery);
+
 
     t = Math.floor(Date.now() / 1000);
     createCookie(LAST_UPDATE_TIME, t);
-    createCookie(START_DATE, "");
+    createCookie(SET_DATE, "");
 
     var url = "http://{0}/{1}".format(window.location.host, images.url);
 
-    console.log("id=%d, query=%s", id, images.lastQuery);
-    console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
+ //   console.log("id=%d, query=%s", id, images.lastQuery);
+//    console.log("slideDelay=" + images.slideDelay + " fadeDelay=" + images.fadeDelay + " url=" + url);
     fillImages(url, id, images.queue, images.maxQueueSize);
 
     images.monitor = setInterval(check_liveness, 10000);
@@ -294,7 +312,7 @@ function slideShow() {
         for (i = 0; i < queue.length; i++)
             s += queue[i].obj["id"] + " ";
 
-        console.log(s);
+  //      console.log(s);
     }
 
 
@@ -313,13 +331,27 @@ function slideShow() {
         location.reload();
     }
 
+    function check_result(obj) {
+        if (obj["created"] < images.startDate || obj["created"] > images.endDate) {
+
+            console.log("No result in date range. id=%s, date=%s, start=%s, end=%s",
+                obj["id"], obj["created"], images.startDate, images.endDate);
+
+            images.startDate = DEFAULT_START_DATE;
+            images.endDate = DEFAULT_END_DATE;
+            createCookie(START_DATE, images.startDate);
+            createCookie(END_DATE, images.endDate);
+
+        }
+    }
+
     function fillImages(url, id, queue, maxQueueSize) {
         var query;
 
 //        console.log("call fillImages, id=%s", id);
 
         if (images.start) {
-            console.log("show already start. Get next of [%s]. queue=%s", id, queue.length)
+//            console.log("show already start. Get next of [%s]. queue=%s", id, queue.length)
             //    return;
         }
 
@@ -337,20 +369,21 @@ function slideShow() {
                 function finish_load(media) {
                     images.queue.push(media);
                     media.loaded = true;
-                    console.log("[%s] fillImages::finish_load queue size=%s, id=%s", obj['id'], queue.length, id);
+  //                  console.log("[%s] fillImages::finish_load queue size=%s, id=%s", obj['id'], queue.length, id);
 
+                    check_result(media.obj);
                     print_queue(queue);
                     fillImages(url, media.obj['id'], queue, maxQueueSize);
                 }
 
                 obj = JSON.parse(xmlhttp.responseText);
 
-                console.log("[%s] fillImages::onreadystatechange url=%s obj=%s", obj['id'], url, xmlhttp.responseText);
+ //               console.log("[%s] fillImages::onreadystatechange url=%s obj=%s", obj['id'], url, xmlhttp.responseText);
 
                 if (obj["media_type"] == 'image') {
                     media = new Image();
                     media.type = "img";
-                    console.log("[%s] fillImages::onreadystatechange load img", obj["id"]);
+  //                  console.log("[%s] fillImages::onreadystatechange load img", obj["id"]);
                     media.onload = function () {
                         finish_load(media);
                     }
@@ -358,7 +391,7 @@ function slideShow() {
                 else if (obj["media_type"] == 'video') {
                     media = document.createElement('video');
                     media.type = "video";
-                    console.log("[%s] fillImages::onreadystatechange  load video", obj["id"]);
+ //                   console.log("[%s] fillImages::onreadystatechange  load video", obj["id"]);
 
                     // https://www.w3schools.com/tags/av_event_canplay.asp
                     media.onloadedmetadata = function () {
@@ -388,7 +421,7 @@ function slideShow() {
                 media.obj = obj;
                 media.loaded = false;
                 media.src = "http://{0}/{1}".format(window.location.host, obj["path"])
-                console.log("[%s] fillImages::onreadystatechange  media.src=", obj["id"], media.src);
+  //              console.log("[%s] fillImages::onreadystatechange  media.src=", obj["id"], media.src);
             }
         }
         xmlhttp.onerror = function () {
@@ -399,31 +432,37 @@ function slideShow() {
             failImageLoading();
         }
 
-        query = "{0}?id={1}&media={2}".format(url, id, images.media);
-        console.log("images.dateQuery=%s", images.dateQuery);
+        query = "{0}?id={1}&media={2}&start={3}&end={4}".format(url, id, images.media,
+            images.startDate, images.endDate);
+  //      console.log("images.startDate=%s  endDate=%s", images.startDate, images.endDate);
 
         if (images.dateQuery == null || images.dateQuery == "") {
             if (queue.length == 0 && (images.cur_id || images.lastQuery)) {
                 if (images.cur_id) {
-                    query = "{0}?curid={1}&media={2}".format(url, images.cur_id, images.media);
-                    console.log("Use cur_id = %s ", query);
+                    query = "{0}?curid={1}&media={2}&start={3}&end={4}".format(url, images.cur_id, images.media,
+                            images.startDate, images.endDate);
+ //                   console.log("Use cur_id = %s ", query);
 
                     images.cur_id = null;
                 }
                 else if (images.lastQuery) {
                     query = images.lastQuery;
 
-                    console.log("Use last query = %s", images.lastQuery);
+   //                 console.log("Use last query = %s", images.lastQuery);
                 }
             }
-            else
-                query = "{0}?id={1}&media={2}".format(url, id, images.media);
+            else {
+                query = "{0}?id={1}&media={2}&start={3}&end={4}".format(url, id, images.media,
+                    images.startDate, images.endDate);
+            }
         }
         else {
-            query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
+            query = "{0}?setdate={1}&media={2}&start={3}&end={4}".format(url, images.dateQuery,
+                    images.media, images.startDate, images.endDate);
             images.dateQuery = null;
         }
-        console.log("query=%s", query);
+
+//        console.log("query=%s", query);
 
         xmlhttp.open("GET", query, true);
         xmlhttp.timeout = 10000;
@@ -434,31 +473,33 @@ function slideShow() {
     function fillOneImage(url, queue) {
         var query;
 
-        console.log("call fillOneImage");
+ //       console.log("call fillOneImage");
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 obj = JSON.parse(xmlhttp.responseText);
 
-                console.log("{0}", obj);
+ //               console.log("{0}", obj);
                 if (obj["media_type"] == 'image') {
                     media = new Image();
                     media.type = "img";
-                    console.log("[%s] fillOneImage::onreadystatechange  load img 1", obj["id"]);
+ //                   console.log("[%s] fillOneImage::onreadystatechange  load img 1", obj["id"]);
                     media.onload = function () {
                         images.queue.push(media);
+                        check_result(media.obj);
                     }
                 }
                 else if (obj["media_type"] == 'video') {
                     media = document.createElement('video')
                     media.type = "video";
 
-                    console.log("[%s] fillOneImage::onreadystatechang load video 1", obj["id"]);
+//                    console.log("[%s] fillOneImage::onreadystatechang load video 1", obj["id"]);
                     media.onloadedmetadata = function () {
                         images.queue.push(media);
                         media.loaded = true;
+                        check_result(media.obj);
 
-                        console.log("[%s] fillOneImage::media.oncanplay queue size=%s", obj['id'], queue.length);
+ //                       console.log("[%s] fillOneImage::media.oncanplay queue size=%s", obj['id'], queue.length);
                         print_queue(queue);
                     }
                     media.onerror = function () {
@@ -504,12 +545,15 @@ function slideShow() {
         if (images.dateQuery == null || images.dateQuery == "") {
             id = queue[queue.length - 1].obj['id'];
 
-            query = "{0}?id={1}&media={2}".format(url, id, images.media);
+            query = "{0}?id={1}&media={2}&start={3}&end={4}".format(url, id, images.media,
+                images.startDate, images.endDate);
         }
         else {
-            query = "{0}?date={1}&media={2}".format(url, images.dateQuery, images.media);
+            query = "{0}?setdate={1}&media={2}&start={3}&end={4}".format(url, images.dateQuery,
+                images.media, images.startDate, images.endDate);
             images.dateQuery = null;
         }
+
         xmlhttp.open("GET", query, true);
         xmlhttp.timeout = 10000;
         xmlhttp.send();
@@ -522,18 +566,18 @@ function slideShow() {
     */
 
     function failImageLoading() {
-        console.log("Fail to load images");
+//        console.log("Fail to load images");
     }
 
     // start slide show
     function completeImagesLoading() {
-        console.log("succeed to load images. images.start %s", images.start);
+//        console.log("succeed to load images. images.start %s", images.start);
         if (images.start == false) {
             images.start = true;
             transitionSlides();
         }
         else {
-            console.log("WARNING.  Already started");
+//            console.log("WARNING.  Already started");
         }
     }
 
@@ -731,7 +775,7 @@ function slideShow() {
         else {
             cur_id = curMediaContainer.obj["id"];
         }
-        console.log("start transition cur=%s next=%s", cur_id, nextMediaContainer.obj["id"]);
+   //     console.log("start transition cur=%s next=%s", cur_id, nextMediaContainer.obj["id"]);
 
         fadeTransition(curMediaContainer, nextMediaContainer);
     } // transitionSlides
@@ -818,7 +862,7 @@ function slideShow() {
         else {
             cur_id = curMediaContainer.obj["id"];
         }
-        console.log("complete transition  cur=%s next=%s", cur_id, nextMediaContainer.obj["id"]);
+ //       console.log("complete transition  cur=%s next=%s", cur_id, nextMediaContainer.obj["id"]);
 
         // if settings are changed, save them
         if (images.slideDelay != parseInt(obj["slide_delay"])) {
@@ -842,7 +886,7 @@ function slideShow() {
             clearInterval(images.slideShowID);
             mediaElement = nextMediaContainer.querySelectorAll('video')[0];
             mediaElement.onended = function () {
-                console.log("[%s] video Done =================== ", nextMediaContainer.obj["id"]);
+   //             console.log("[%s] video Done =================== ", nextMediaContainer.obj["id"]);
                 transitionSlides();
             }
 
@@ -850,7 +894,7 @@ function slideShow() {
             createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
 
             mediaElement.volume = images.videoVolume;
-            console.log("[%s] start playing video. ", nextMediaContainer.obj["id"]);
+   //         console.log("[%s] start playing video. ", nextMediaContainer.obj["id"]);
             mediaElement.play();
             // start video
         }
@@ -858,10 +902,10 @@ function slideShow() {
             createCookie(IMAGE_ID, nextMediaContainer.obj["id"]);
             set_last_update(nextMediaContainer.obj["id"]);
             // if pic, start new timer
-            console.log("start new timer. delay" + images.slideDelay);
+  //          console.log("start new timer. delay" + images.slideDelay);
             images.slideShowID = setInterval(transitionSlides, images.slideDelay);
         }
-        console.log("media.query=%s", nextMediaContainer.query);
+  //      console.log("media.query=%s", nextMediaContainer.query);
         createCookie(QUERY, nextMediaContainer.query);
 
         images.queue.shift();
@@ -891,7 +935,7 @@ function onConfig() {
         //document.config.volume.value = readCookie(VIDEO_VOLUME, "1");
 
         if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) //IF IE > 10
-        {   
+        {   /*
             var today = new Date();
             var dd = today.getDate();
 
@@ -905,11 +949,22 @@ function onConfig() {
                 mm = '0' + mm;
             }
             document.config.start.value = mm + '/' + dd + '/' + yyyy;
+            */
+            // 01234567890
+            // 2013-05-16   ->   05/16/2013
+            s = images.startDate;
+ //           alert(s);
+            document.config.start.value = s.substring(5, 7) + '/' + s.substring(8) + '/' + s.substring(0, 4)
+            s = images.endDate;
+            document.config.end.value = s.substring(5, 7) + '/' + s.substring(8) + '/' + s.substring(0, 4)
+
         }
         else {
-            document.config.start.value = "none";
+            document.config.start.value = images.startDate;
+            document.config.end.value = images.endDate;
         }
-        document.config.start.value = "none";
+
+        document.config.setDate.value = "none";
 
         for (i = 0; i < document.config.media.length; i++) {
             if (document.config.media[i].value == images.media) {
@@ -940,18 +995,56 @@ function onConfig() {
 function onSave() {
     var media = document.config.media;
 
+    if (document.config.setDate.value && document.config.setDate.value != "none") {
+        images.dateQuery = document.config.setDate.value;
+        if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) //IF IE > 10
+        {   // 0123456789
+            // 05/16/2013
+            s = document.config.setDate.value;
+            images.dateQuery = s.substring(6) + "-" + s.substring(0, 2) + "-" + s.substring(3, 5);
+            alert(images.dateQuery);
+        }
+        createCookie(SET_DATE, images.dateQuery);
+        eraseCookie(QUERY);
+    }
+
     if (document.config.start.value && document.config.start.value != "none") {
-        images.dateQuery = document.config.start.value;
+        images.startDate = document.config.start.value;
         if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) //IF IE > 10
         {   // 0123456789
             // 05/16/2013
             s = document.config.start.value;
-            images.dateQuery = s.substring(6) + "-" + s.substring(0, 2) + "-" + s.substring(3, 5);
-            alert(images.dateQuery);
+            images.startDate = s.substring(6) + "-" + s.substring(0, 2) + "-" + s.substring(3, 5);
+//            alert(images.startDate + "," + images.endDate);
         }
-        createCookie(START_DATE, images.dateQuery);
-        eraseCookie(QUERY);
     }
+    else {
+        images.startDate = DEFAULT_START_DATE;
+    }
+
+    if (document.config.end.value && document.config.end.value != "none") {
+        images.endDate = document.config.end.value;
+        if ((navigator.userAgent.indexOf("MSIE") != -1) || (!!document.documentMode == true)) //IF IE > 10
+        {   // 0123456789
+            // 05/16/2013
+            s = document.config.end.value;
+            images.endDate = s.substring(6) + "-" + s.substring(0, 2) + "-" + s.substring(3, 5);
+            alert(images.startDate + "," + images.endDate);
+        }
+    }
+    else {
+        images.endDate = DEFAULT_END_DATE;
+    }
+
+    if (images.startDate > images.endDate) {
+        images.startDate = DEFAULT_START_DATE;
+        images.endDate = DEFAULT_END_DATE;
+
+        alert("wrong date setting. reset");
+    }
+    createCookie(START_DATE, images.startDate);
+    createCookie(END_DATE, images.endDate);
+    eraseCookie(QUERY);
 
     vol = document.config.volume.value / 100.0;
     images.videoVolume = vol;

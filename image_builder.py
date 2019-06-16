@@ -45,7 +45,6 @@ MEDIA_IMG = 0
 MEDIA_VIDEO = 1
 
 ENCODER = 'HandBrakeCLI.exe -i {in} -o {out} --optimize --format mp4 --ab 64 --mixdown mono --quality 23 -e x264 -x vbv-bufsize={bufsize}:vbv-maxrate={rate} --width 1280 --height 720'
-ENCODER2 = 'HandBrakeCLI.exe -i {in} -o {out} --preset-import-file heesung_encode.json --preset "heesung"'
 
 class ImageBuilder(object):
     DEFAULT_SIZE = (1920, 1080)
@@ -303,19 +302,12 @@ class ImageBuilder(object):
         dst = os.path.join(dst_path, name + ".mp4")
 
         if not os.path.exists(dst) or self.video_overwrite:
-            """
             input = { "in":src, 
                      "out":dst, 
                      "rate": self.rate, 
                      "bufsize":self.rate*2 }
 
             cmd = ENCODER.format(**input)
-            """
-
-            input = { "in":src, 
-                     "out":dst }
-
-            cmd = ENCODER2.format(**input)
 
             log.debug(cmd) 
             log.debug("*******************************************************")

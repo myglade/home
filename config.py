@@ -17,7 +17,7 @@ conf_data = {
     "image_path": "c:\\Project\\images",
     "image_scan_path": "e:\\temp",
     "web_media_path": "media",
-    "slide_delay": 10000,
+    "slide_delay": 3000,
     "fade_delay": 50,
     "video_overwrite" : False,
     "desc_format": "%s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + \

@@ -10,6 +10,10 @@
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <title>Slide Show</title>
 
+    <link rel="stylesheet" href="jquery-ui-1.12.1/jquery-ui.css">
+    <script src="jquery-ui-1.12.1/jquery.js"></script>
+    <script src="jquery-ui-1.12.1/jquery-ui.js"></script>
+
     <style>
         #slideShowImages { /* The following CSS rules are optional. */
             background-color: black;
@@ -161,6 +165,17 @@
         }
         }
     </style>
+    <script>
+        $(function () {
+            if ($('#setDate')[0].type != 'date')
+                $("#setDate").datepicker();
+            if ($('#start')[0].type != 'date')
+                $("#start").datepicker();
+            if ($('#end')[0].type != 'date')
+                $("#end").datepicker();
+        });
+    </script>
+
     <script src="skycons.js"></script>
     <script src="slideShow.js?v={{ rand }}"></script>
 
@@ -191,8 +206,16 @@
             <form name="config">
                 <table>
                     <tr>
+                        <td>Set Date</td>
+                        <td><input type="date" name="setDate" id="setDate" /></td>
+                    </tr>
+                    <tr>
                         <td>Start Date</td>
-                        <td><input type="date" name="start" /></td>
+                        <td><input type="date" name="start" id="start" /></td>
+                    </tr>
+                    <tr>
+                        <td>End Date</td>
+                        <td><input type="date" name="end" id="end" /></td>
                     </tr>
                     <tr> <td><p> </td> </tr>
                     <tr>
