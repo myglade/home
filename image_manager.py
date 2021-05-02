@@ -26,7 +26,7 @@ class ImageManager(object):
                 self.db = Db()
                 break
             except InterfaceError as e:
-                print "[%d] Retry.  %s" % (retry, e)
+                print("[%d] Retry.  %s" % (retry, e))
                 time.sleep(5)
 
                 retry += 1
@@ -140,4 +140,4 @@ if __name__ == "__main__":
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
     
     #mgr = ImageManager("static\\media\\")
-    print "done"
+    print("done")

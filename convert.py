@@ -44,7 +44,7 @@ def convert(src, dst_path, rate=4000):
 
     input = { "in":src, "out":dst, "rate": rate, "bufsize":rate*2 }
     cmd = ENCODER.format(**input)
-    print cmd
+    print(cmd)
     log.debug(cmd) 
     log.debug("*******************************************************")
     r = os.system(cmd)
@@ -63,9 +63,9 @@ def fix(path):
     for root, dirs, files in os.walk(unicode(path)):
         for file in files:
             path = os.path.join(root, file)
-            print "Check %s" % path
+            print("Check %s" % path)
             if not file.startswith("201"):
-                print "error=", file
+                print("error=", file)
                 continue
 
             s = file
@@ -89,7 +89,7 @@ def fix(path):
             ts = time.mktime(dt.timetuple())
             os.utime(path, (origin_atime, ts))
 
-    print "done"
+    print("done")
 
 if __name__ == "__main__":
     convert("C:\\Users\\heesung\\Desktop\\media\\IMG_8638.MOV",

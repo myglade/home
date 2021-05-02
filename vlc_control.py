@@ -180,7 +180,7 @@ class VlcController(object):
         key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "Software\\VideoLAN\\VLC")
         # get (default) value
         value =  _winreg.QueryValueEx(key, "")
-        print value
+        print(value)
 
     def start(self):
         pass
@@ -198,5 +198,5 @@ if __name__ == "__main__":
     vlc.status()
     vlc.start()
 
-    print "done"
+    print("done")
 

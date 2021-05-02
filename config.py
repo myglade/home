@@ -61,4 +61,4 @@ def get(key):
     return info.conf_data[key]
 
 if __name__ == "__main__":
-    print get("image_db")
+    print(get("image_db"))

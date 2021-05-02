@@ -1,11 +1,11 @@
 {
-    "cur_temperature": 59, 
-    "cur_time": "2020-04-21 18:14:53", 
-    "daily_max": 70, 
-    "daily_min": 47, 
-    "daily_summary": "Partly cloudy throughout the day.", 
-    "icon": "partly-cloudy-day", 
-    "latitude": 37.3472892, 
-    "longitude": -121.9840828, 
+    "cur_temperature": 68,
+    "cur_time": "2021-05-02 19:01:58",
+    "daily_max": 73,
+    "daily_min": 50,
+    "daily_summary": "Clear throughout the day.",
+    "icon": "clear-day",
+    "latitude": 37.3472892,
+    "longitude": -121.9840828,
     "timezone": "America/Los_Angeles"
 }

@@ -126,6 +126,6 @@ if __name__ == "__main__":
     d = {}
     while True:
         get_weather_info(d)
-        print "\n\n"
-        print d
+        print("\n\n")
+        print(d)
         time.sleep(10)

@@ -349,7 +349,7 @@ class ImageBuilder(object):
                 self.convert_image(src, name, ext, stinfo)
         except Exception as e:
             log.error("error. e=%s. src=%s", e, src)
-            print e
+            print(e)
 
  
 
@@ -391,7 +391,7 @@ def test():
         for dir in dirs:
             if dir in ["320", "1280"]:
                 path = os.path.join(root, dir)
-                print path
+                print(path)
                 shutil.rmtree(path)
 
 if __name__ == "__main__":

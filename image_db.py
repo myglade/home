@@ -276,7 +276,7 @@ if __name__ == "__main__":
     for i in xrange(20):
         image = imagedb.get_next_by_id(id, "both", "2017-10-12", 
                                                      "2017-10-14")
-        print "+++++++++++++++++++++++++++++", image
+        print("+++++++++++++++++++++++++++++", image)
         id = image["id"]
 
 '''
