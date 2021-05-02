@@ -1,0 +1,11 @@
+Magick.NET-Q16-AnyCPU.dll
+HeicFileConsole.exe
+
+https://heicfile.com/command-line.html
+
+
+1. copy 2 files to folder that has heic files
+2. run without parameter
+
+
+it will convert all heic files to jpg.

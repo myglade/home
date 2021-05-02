@@ -230,7 +230,7 @@ class ImageBuilder(object):
         elif t.find('/') != -1:
             temp = t.split('/')
 
-        if not temp or year != temp[0]:
+        if not temp: # or year != temp[0]:
             log.warn("year : %s <> picture info : %s", year, temp[0])
         else:
             year = temp[0]
@@ -248,6 +248,7 @@ class ImageBuilder(object):
         self.resize(src, self.DEFAULT_SIZE, dst)
         os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
 
+        '''
         # resize to small
         path = os.path.join(dst_path, str(self.SMALL_SIZE[0]))
         if not os.path.exists(path):
@@ -265,6 +266,7 @@ class ImageBuilder(object):
         dst = os.path.join(path, filename)
         self.resize(src, self.THUMBNAIL, dst)
         os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
+        '''
 
         if self.db:
             date = str(datetime.datetime.fromtimestamp(stinfo.st_mtime))
@@ -378,23 +380,37 @@ class ImageBuilder(object):
         scan_path = list(set(t))
 
         self.scan(scan_path)
-        
-
+    
 image_builder = ImageBuilder()
+
+def test():   
+    scan_path = "d:\\images\\"
+
+    import shutil
+    for root, dirs, files in os.walk(unicode(scan_path)):
+        for dir in dirs:
+            if dir in ["320", "1280"]:
+                path = os.path.join(root, dir)
+                print path
+                shutil.rmtree(path)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)s.%(funcName)s %(levelname)s %(message)s')
 
+   
+   #test()
+    b = ImageBuilder()
+   # b.get_info("d:\\IMG_3756.heic", "jpg");
    # info.resize("C:\\Users\\heesung\\Desktop\\media\\1.JPG", (1920, 1080), 
    #             "C:\\Users\\heesung\\Desktop\\media\\1920\\1.JPG")
-    b = ImageBuilder()
+    #b = ImageBuilder()
     
-    b.process("e:\\temp\\2014-1\\IMG_20140101_0005.jpg","IMG_20140101_0005", "jpg", 0)
-    b.process("y:\\Pictures\\2011-2\\IMG_0402.jpg","IMG_0402", "jpg", 0)
-    b.process("y:\\Pictures\\2011-1\\IMG_0013.jpg","SNC13036", "jpg", 0)
-    b.process("y:\\Pictures\\2009-1\\SNC13036.jpg","SNC13036", "jpg", 0)
-    b.process("y:\\Pictures\\2008\\Diane_Erin 001-ANIMATION.gif","Diane_Erin 001-ANIMATION", "gif", 0)
+    #b.process("e:\\temp\\2014-1\\IMG_20140101_0005.jpg","IMG_20140101_0005", "jpg", 0)
+    b.process("D:\\Pictures\\2019-4\\IMG_1382.jpg","IMG_1382", "jpg", 0)
+    #b.process("y:\\Pictures\\2011-1\\IMG_0013.jpg","SNC13036", "jpg", 0)
+    #b.process("y:\\Pictures\\2009-1\\SNC13036.jpg","SNC13036", "jpg", 0)
+    #b.process("y:\\Pictures\\2008\\Diane_Erin 001-ANIMATION.gif","Diane_Erin 001-ANIMATION", "gif", 0)
     #b.start(None, "C:\\Users\\heesung\\Desktop\\media\\")
 
 
