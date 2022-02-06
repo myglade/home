@@ -68,7 +68,7 @@ class Imagelist(object):
         for spath in self.scan_path:
             if not spath:
                 continue
-            for root, dirs, files in os.walk(unicode(spath)):
+            for root, dirs, files in os.walk(spath):
                 for file in files:
                     filename, ext = os.path.splitext(file)
                     ext = ext[1:].lower()
@@ -81,7 +81,7 @@ class Imagelist(object):
                         media_type = MEDIA_VIDEO
 
                     path = os.path.join(root, file)
-                    l = len(unicode(self.seed_path))
+                    l = len(self.seed_path)
                     rel_path = os.path.join(root[l:], file)
                     callback(file, rel_path, path, ext, media_type)
                     #self.imagelist.append(Image(file, rel_path))

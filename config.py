@@ -14,8 +14,8 @@ log = logging.getLogger("slideshow")
 conf_data = {
     "image_db": "image.sqlite",
     "gps_db": "gps_db",
-    "image_path": "c:\\Project\\images",
-    "image_scan_path": "e:\\temp",
+    "image_path": "d:\\images",
+    "image_scan_path": "d:\\Pictures\temp",
     "web_media_path": "media",
     "slide_delay": 3000,
     "fade_delay": 50,
@@ -61,4 +61,8 @@ def get(key):
     return info.conf_data[key]
 
 if __name__ == "__main__":
-    print(get("image_db"))
+    text = "hi , I'm text"
+    bb = text.encode('utf-8')
+    s = "aaaa"
+    b = bb.decode("utf-8", "strict")
+    print("bbb")

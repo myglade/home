@@ -30,6 +30,8 @@ pip install schedule
 
 pip install requests
 
+pip install win32-setctime
+
 x pip install PyMySQL
 https://github.com/PyMySQL/PyMySQL
 

@@ -32,7 +32,9 @@ import logging
 import os
 import piexif
 from PIL import Image
-
+from hachoir.parser import createParser
+from hachoir.metadata import extractMetadata
+from win32_setctime import setctime
 
 log = logging.getLogger(config.logname)
 
@@ -92,6 +94,9 @@ class ImageBuilder(object):
             longitude = self.get_gps(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
     
             loc = str(latitude) + "," + str(longitude)
+
+        if isinstance(date, (bytes, bytearray)):
+            date = date.decode('utf-8')
 
         return (date, loc)
 
@@ -172,7 +177,7 @@ class ImageBuilder(object):
             h = size[1]
             w = (width * h) / height
 
-        img = img.resize((w, h), Image.ANTIALIAS)
+        img = img.resize((int(w), int(h)), Image.ANTIALIAS)
         
         try:
             if exif_bytes:
@@ -188,19 +193,23 @@ class ImageBuilder(object):
     def convert_image(self, src, name, ext, stinfo):
         log.info("start convert image. src=%s, name=%s, ext=%s",
                  src, name, ext)
-
-        date = None
         loc = None
 
         d = datetime.datetime.fromtimestamp(stinfo.st_mtime)
-        year = d.strftime('%Y')
-        mon = d.strftime('%m')
-
+        created_date = ""
         try:
-            date, loc = self.get_info(src, ext)
+            created_date, loc = self.get_info(src, ext)
+            if created_date:
+                d = datetime.datetime.strptime(created_date, "%Y:%m:%d %H:%M:%S")
+            print(created_date)
         except Exception as e:
             log.warn("fail to getinfo e=%s, src=%s", e, src)
-            date = year + ":" + mon
+        
+        if not created_date:
+            t = src.split("\\")[-2]
+            t1 = t.split("-")[0]
+            created_date = f"{t1}:12:31 00:00:00"
+            d = datetime.datetime.strptime(created_date, "%Y:%m:%d %H:%M:%S")
 
         modify_flag = 0
         try:
@@ -209,17 +218,15 @@ class ImageBuilder(object):
             if self.is_rotate:
                 modify_flag += MODIFY_ROTATE
                 # set original timestamp to rotated one
-                os.utime(path, (stinfo.st_atime, stinfo.st_mtime))
+                os.utime(src, (stinfo.st_atime, stinfo.st_mtime))
         except Exception as e:
             log.error("Fail to adjust rotation %s. e-%s", src, e)
             modify_flag += MODIFY_ROTATE_FAIL
 
-        if not date:
-            date = year + ":" + mon
-        t = date
-        for i in range(len(date)):
-            if date[i] == ' ':
-                t = date[:i]
+        t = created_date
+        for i in range(len(created_date)):
+            if created_date[i] == ' ':
+                t = created_date[:i]
                 break
 
         temp = None
@@ -230,7 +237,10 @@ class ImageBuilder(object):
         elif t.find('/') != -1:
             temp = t.split('/')
 
-        if not temp: # or year != temp[0]:
+        if not temp: # or year != temp[0]:     
+            d = datetime.datetime.fromtimestamp(stinfo.st_mtime)
+            year = d.strftime('%Y')
+            mon = d.strftime('%m')
             log.warn("year : %s <> picture info : %s", year, temp[0])
         else:
             year = temp[0]
@@ -246,7 +256,9 @@ class ImageBuilder(object):
         filename = name + "." + ext
         dst = os.path.join(dst_path, filename)
         self.resize(src, self.DEFAULT_SIZE, dst)
-        os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
+        setctime(dst, d.timestamp())
+        os.utime(dst, (d.timestamp(), d.timestamp()))
+
 
         '''
         # resize to small
@@ -269,10 +281,9 @@ class ImageBuilder(object):
         '''
 
         if self.db:
-            date = str(datetime.datetime.fromtimestamp(stinfo.st_mtime))
             self.db.put(filename, 
                         os.path.join(rel_path, filename), 
-                        date,
+                        created_date,
                         MEDIA_IMG,
                         ext,
                         loc, 
@@ -285,12 +296,6 @@ class ImageBuilder(object):
         log.info("start convert video. src=%s, name=%s, ext=%s",
                  src, name, ext)
 
-        d = datetime.datetime.fromtimestamp(stinfo.st_mtime)
-
-        # {path}/2010/10
-        rel_path = os.path.join(d.strftime('%Y'), d.strftime('%m'))
-        dst_path = os.path.join(self.image_path, rel_path)
-
         if ext == 'avi' or ext == 'm2ts':
             # if already converted to mp4, skip it
             temp = src + ".mp4"
@@ -298,6 +303,30 @@ class ImageBuilder(object):
                 log.info("%s already exists", temp)
                 return
 
+        year = ""
+        mon = ""
+        d = datetime.datetime.fromtimestamp(stinfo.st_mtime)
+        # '- Creation date: 2020-03-22 19:35:43'
+
+        tmp = ""
+        if ext in ['m4v', 'mov', 'mp4']:
+            parser = createParser(src)
+            metadata = extractMetadata(parser)
+            for line in metadata.exportPlaintext():
+                if "- Creation date: " in line:
+                    tmp = line[len("- Creation date: "):]
+                    d = datetime.datetime.strptime(tmp, "%Y-%m-%d %H:%M:%S")
+                    break
+
+        if not tmp:
+            t = src.split("\\")[-2]
+            t1 = t.split("-")[0]
+            d = datetime.datetime.strptime(f"{t1}:12:31 00:00:00", "%Y:%m:%d %H:%M:%S")
+
+        year = d.strftime('%Y')
+        mon = d.strftime('%m')
+        rel_path = os.path.join(year, mon)
+        dst_path = os.path.join(self.image_path, rel_path)
         if not os.path.exists(dst_path):
             os.makedirs(dst_path)
 
@@ -324,8 +353,10 @@ class ImageBuilder(object):
                 return
 
             log.info("convert: %s", dst)
-            os.utime(dst, (stinfo.st_atime, stinfo.st_mtime))
 
+        setctime(dst, d.timestamp())
+        os.utime(dst, (d.timestamp(), d.timestamp()))
+        
         if self.db:
             filename = name + ".mp4"
             self.db.put(filename, 
@@ -359,7 +390,7 @@ class ImageBuilder(object):
         for spath in scan_path:
             if not spath:
                 continue
-            for root, dirs, files in os.walk(unicode(spath)):
+            for root, dirs, files in os.walk(spath):
                 for file in files:
                     filename, ext = os.path.splitext(file)
                     ext = ext[1:].lower()
@@ -380,14 +411,14 @@ class ImageBuilder(object):
         scan_path = list(set(t))
 
         self.scan(scan_path)
-    
+        
 image_builder = ImageBuilder()
 
 def test():   
     scan_path = "d:\\images\\"
 
     import shutil
-    for root, dirs, files in os.walk(unicode(scan_path)):
+    for root, dirs, files in os.walk(scan_path):
         for dir in dirs:
             if dir in ["320", "1280"]:
                 path = os.path.join(root, dir)
@@ -407,7 +438,7 @@ if __name__ == "__main__":
     #b = ImageBuilder()
     
     #b.process("e:\\temp\\2014-1\\IMG_20140101_0005.jpg","IMG_20140101_0005", "jpg", 0)
-    b.process("D:\\Pictures\\2019-4\\IMG_1382.jpg","IMG_1382", "jpg", 0)
+    b.process("D:\\Pictures\\2019-4\\IMG_1382.jpg","IMG_1382", "jpg", MEDIA_VIDEO)
     #b.process("y:\\Pictures\\2011-1\\IMG_0013.jpg","SNC13036", "jpg", 0)
     #b.process("y:\\Pictures\\2009-1\\SNC13036.jpg","SNC13036", "jpg", 0)
     #b.process("y:\\Pictures\\2008\\Diane_Erin 001-ANIMATION.gif","Diane_Erin 001-ANIMATION", "gif", 0)

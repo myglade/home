@@ -60,7 +60,7 @@ def convert(src, dst_path, rate=4000):
     log.info("convert: %s", dst)
 
 def fix(path):
-    for root, dirs, files in os.walk(unicode(path)):
+    for root, dirs, files in os.walk(path):
         for file in files:
             path = os.path.join(root, file)
             print("Check %s" % path)

@@ -68,7 +68,7 @@ class Media(object):
         log.info("start scan")
 
         self.media_list = {} 
-        for subdir, dirs, files in os.walk(unicode(self.dirlist)):
+        for subdir, dirs, files in os.walk(self.dirlist):
             for file in files:
                 filename, ext = os.path.splitext(file)
                 ext = ext[1:]
